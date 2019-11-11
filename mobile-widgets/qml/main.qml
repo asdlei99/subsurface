@@ -291,7 +291,7 @@ Kirigami.ApplicationWindow {
 							pageStack.pop()
 						}
 						diveList.diveListModel = diveModel
-						pageStack.push(diveList)
+						showDiveList()
 						hideBusy()
 					}
 				}
@@ -731,9 +731,15 @@ if you have network connectivity and want to sync your data to cloud storage."),
 		}
 	}
 
-	DiveList {
+	NewDiveList {
 		id: diveList
-		visible: false
+		opacity: 0
+		Behavior on opacity {
+			NumberAnimation {
+				duration: 200
+				easing.type: Easing.OutQuad
+			}
+		}
 	}
 
 	Settings {

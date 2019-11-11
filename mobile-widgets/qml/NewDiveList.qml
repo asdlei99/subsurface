@@ -41,16 +41,14 @@ Kirigami.ScrollablePage {
 			// this allows us to access properties of the currentItem from outside
 			property variant myData: model
 			id: diveOrTripDelegateItem
-			leftPadding: 0
-			topPadding: 0
+			padding: 0
 			supportsMouseEvents: true
 			checked: !model.isTrip && model.selected
 			anchors {
 				left: parent.left
 				right: parent.right
 			}
-
-			height: Kirigami.Units.gridUnit * 2 + Kirigami.Units.smallSpacing
+			height: (isTrip ? 9 : 10) * Kirigami.Units.smallSpacing // delegateInnerItem.height
 			backgroundColor: checked ? subsurfaceTheme.primaryColor : subsurfaceTheme.backgroundColor
 			activeBackgroundColor: subsurfaceTheme.primaryColor
 			textColor: checked ? subsurfaceTheme.primaryTextColor : subsurfaceTheme.textColor
@@ -60,7 +58,6 @@ Kirigami.ScrollablePage {
 				if (model.isTrip) {
 					manager.appendTextToLog("clicked on trip " + model.tripTitle)
 					manager.toggle(model.row);
-					// toggle expand (backend to deal with unexpand other trip)
 				} else {
 					manager.appendTextToLog("clicked on dive")
 					if (detailsWindow.state === "view") {
@@ -77,12 +74,14 @@ Kirigami.ScrollablePage {
 
 			// first we look at the trip
 			Item {
+				id: delegateInnerItem
 				width: page.width
 				height: childrenRect.height
 				Rectangle {
 					id: headingBackground
-					height: sectionText.height + Kirigami.Units.gridUnit
+					height: visible ? 8 * Kirigami.Units.smallSpacing : 0
 					anchors {
+						topMargin: Kirigami.Units.smallSpacing / 2
 						left: parent.left
 						right: parent.right
 					}
@@ -90,8 +89,8 @@ Kirigami.ScrollablePage {
 					visible: isTrip
 					Rectangle {
 						id: dateBox
-						height: parent.height - Kirigami.Units.smallSpacing
-						width: 2.5 * Kirigami.Units.gridUnit * PrefDisplay.mobile_scale
+						height: 1.8 * Kirigami.Units.gridUnit
+						width: 2.2 * Kirigami.Units.gridUnit
 						color: subsurfaceTheme.primaryColor
 						radius: Kirigami.Units.smallSpacing * 2
 						antialiasing: true
@@ -101,12 +100,14 @@ Kirigami.ScrollablePage {
 							leftMargin: Kirigami.Units.smallSpacing
 						}
 						Controls.Label {
-							text: tripShortDate
+							visible: headingBackground.visible
+							text: visible ? tripShortDate : ""
 							color: subsurfaceTheme.primaryTextColor
-							font.pointSize: subsurfaceTheme.smallPointSize
+							font.pointSize: subsurfaceTheme.smallPointSize * 0.8
 							lineHeightMode: Text.FixedHeight
-							lineHeight: Kirigami.Units.gridUnit *.9
+							lineHeight: Kirigami.Units.gridUnit *.8
 							horizontalAlignment: Text.AlignHCenter
+							height: contentHeight
 							anchors {
 								horizontalCenter: parent.horizontalCenter
 								verticalCenter: parent.verticalCenter
@@ -115,15 +116,14 @@ Kirigami.ScrollablePage {
 					}
 					Controls.Label {
 						id: sectionText
-						text: tripTitle
-						wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-						visible: text !== ""
-						font.weight: Font.Bold
+						text: visible ? tripTitle : ""
+						elide: Text.ElideRight
+						visible: headingBackground.visible
+						font.weight: Font.Medium
 						font.pointSize: subsurfaceTheme.regularPointSize
 						anchors {
-							top: parent.top
+							verticalCenter: parent.verticalCenter
 							left: dateBox.right
-							topMargin: Math.max(2, Kirigami.Units.gridUnit / 2)
 							leftMargin: horizontalPadding * 2
 							right: parent.right
 						}
@@ -131,11 +131,108 @@ Kirigami.ScrollablePage {
 					}
 				}
 				Rectangle {
-					height: section == "" ? 0 : 1
-					width: parent.width
-					anchors.top: headingBackground.bottom
+					id: headingBottomLine
+					height: visible ? Kirigami.Units.smallSpacing : 0
+					visible: headingBackground.visible
+					anchors {
+						left: parent.left
+						right: parent.right
+						top: headingBackground.bottom
+					}
 					color: "#B2B2B2"
 				}
+
+				Rectangle {
+					id: diveBackground
+					height: visible ? diveListEntry.height + Kirigami.Units.smallSpacing : 0
+					anchors {
+						left: parent.left
+						right: parent.right
+					}
+					color: subsurfaceTheme.backgroundColor
+					visible: !isTrip
+					Item {
+						anchors.fill: parent
+						Rectangle {
+							id: leftBarDive
+							width: Kirigami.Units.smallSpacing
+							height: diveListEntry.height * 0.8
+							color: subsurfaceTheme.lightPrimaryColor
+							anchors {
+								left: parent.left
+								top: parent.top
+								leftMargin: Kirigami.Units.smallSpacing
+								topMargin: Kirigami.Units.smallSpacing * 2
+								bottomMargin: Kirigami.Units.smallSpacing * 2
+							}
+						}
+						Item {
+							id: diveListEntry
+							height: visible ? Math.ceil(childrenRect.height ) : 0
+							anchors {
+								right: parent.right
+								left: leftBarDive.right
+								verticalCenter: parent.verticalCenter
+							}
+							Controls.Label {
+								id: locationText
+								text: (undefined !== location && "" != location) ? location : qsTr("<unnamed dive site>")
+								font.weight: Font.Medium
+								font.pointSize: subsurfaceTheme.smallPointSize
+								elide: Text.ElideRight
+								maximumLineCount: 1 // needed for elide to work at all
+								color: textColor
+								anchors {
+									left: parent.left
+									leftMargin: horizontalPadding * 2
+									topMargin: Kirigami.Units.smallSpacing / 2
+									top: parent.top
+									right: parent.right
+								}
+							}
+							Row {
+								anchors {
+									left: locationText.left
+									top: locationText.bottom
+									topMargin: Kirigami.Units.smallSpacing / 2
+								}
+
+								Controls.Label {
+									id: dateLabel
+									text: (undefined !== dateTime) ? dateTime : ""
+									width: Math.max(locationText.width * 0.45, paintedWidth) // helps vertical alignment throughout listview
+									font.pointSize: subsurfaceTheme.smallPointSize
+									color: diveOrTripDelegateItem.checked ? subsurfaceTheme.darkerPrimaryTextColor : secondaryTextColor
+								}
+								// spacer, just in case
+								Controls.Label {
+									text: " "
+									width: Kirigami.Units.largeSpacing
+								}
+								// let's try to show the depth / duration very compact
+								Controls.Label {
+									text: (undefined !== depthDuration) ? depthDuration : ""
+									width: Math.max(Kirigami.Units.gridUnit * 3, paintedWidth) // helps vertical alignment throughout listview
+									font.pointSize: subsurfaceTheme.smallPointSize
+									color: diveOrTripDelegateItem.checked ? subsurfaceTheme.darkerPrimaryTextColor : secondaryTextColor
+								}
+							}
+							Controls.Label {
+								id: numberText
+								text: "#" + number
+								font.pointSize: subsurfaceTheme.smallPointSize
+								color: diveOrTripDelegateItem.checked ? subsurfaceTheme.darkerPrimaryTextColor : secondaryTextColor
+								anchors {
+									right: parent.right
+									rightMargin: Kirigami.Units.smallSpacing
+									top: locationText.bottom
+									topMargin: Kirigami.Units.smallSpacing / 2
+								}
+							}
+						}
+					}
+				}
+
 			}
 		}
 	}
