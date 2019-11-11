@@ -2,6 +2,14 @@
 
 #include "divefilter.h"
 
+// The instance function is the same for desktop and mobile.
+// The rest is different.
+DiveFilter *DiveFilter::instance()
+{
+	static DiveFilter self;
+	return &self;
+}
+
 #ifdef SUBSURFACE_MOBILE
 
 DiveFilter::DiveFilter()
@@ -114,12 +122,6 @@ namespace {
 			diveNotes.push_back(QString(d->notes));
 		return check(dnotes, diveNotes, mode, stringMode);
 	}
-}
-
-DiveFilter *DiveFilter::instance()
-{
-	static DiveFilter self;
-	return &self;
 }
 
 DiveFilter::DiveFilter() : diveSiteRefCount(0)
