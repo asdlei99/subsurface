@@ -83,7 +83,7 @@ Kirigami.ApplicationWindow {
 	}
 
 	function scrollToTop() {
-		diveList.scrollToTop()
+		newDiveList.scrollToTop()
 	}
 
 	function showMap() {
@@ -99,9 +99,9 @@ Kirigami.ApplicationWindow {
 	function showDiveList() {
 		if (globalDrawer.drawerOpen)
 			globalDrawer.close()
-		var i=pageIndex(diveList)
+		var i=pageIndex(newDiveList)
 		if (i === -1)
-			pageStack.push(diveList)
+			pageStack.push(newDiveList)
 		else
 			pageStack.currentIndex = i
 	}
