@@ -20,6 +20,8 @@
 
 #define NOCLOUD_LOCALSTORAGE format_string("%s/cloudstorage/localrepo[master]", system_default_directory())
 
+class QAction;
+
 class QMLManager : public QObject {
 	Q_OBJECT
 	Q_PROPERTY(QString logText READ logText WRITE setLogText NOTIFY logTextChanged)
@@ -265,6 +267,7 @@ private:
 	bool m_showNonDiveComputers;
 	struct dive *m_copyPasteDive = NULL;
 	struct dive_components what;
+	QAction *undoAction;
 
 	bool verifyCredentials(QString email, QString password, QString pin);
 
