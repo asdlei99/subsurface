@@ -25,6 +25,7 @@
 #include "qt-models/messagehandlermodel.h"
 #include "qt-models/tankinfomodel.h"
 #include "qt-models/mobilelistmodel.h"
+#include "qt-models/filtermodels.h"
 #include "core/device.h"
 #include "core/errorhelper.h"
 #include "core/file.h"
@@ -2067,8 +2068,12 @@ void QMLManager::setFilter(const QString filterText)
 	// show that we are doing something, then do something in another thread in order not to block the UI
 	QMetaObject::invokeMethod(qmlWindow, "showBusy", Q_ARG(QVariant, QVariant::fromValue(QString())));
 	QtConcurrent::run(QThreadPool::globalInstance(),
-			  [this,filterText]{
-				DiveListSortModel::instance()->setFilter(filterText);
+			  [=]{
+				// DiveListSortModel::instance()->setFilter(filterText);
+				FilterData fd;
+				fd.validFilter = true;
+				fd.fullText = filterText;
+				MultiFilterSortModel::instance()->filterDataChanged(fd);
 				QMetaObject::invokeMethod(qmlWindow, "hideBusy");
 			  });
 }
