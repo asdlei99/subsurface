@@ -19,8 +19,6 @@ set(SUBSURFACE_GENERIC_MODELS_LIB_SRCS
 	diveplotdatamodel.h
 	divetripmodel.cpp
 	divetripmodel.h
-	filtermodels.cpp
-	filtermodels.h
 	maplocationmodel.cpp
 	maplocationmodel.h
 	models.cpp
@@ -63,6 +61,8 @@ set(SUBSURFACE_MOBILE_MODELS_LIB_SRCS
 	divelistmodel.h
 	divesummarymodel.cpp
 	divesummarymodel.h
+	mobilefiltermodel.cpp
+	mobilefiltermodel.h
 	gpslistmodel.cpp
 	gpslistmodel.h
 	messagehandlermodel.cpp
