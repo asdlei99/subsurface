@@ -104,9 +104,8 @@ void run_ui()
 	gpsSortModel->setSortRole(GpsListModel::GpsWhenRole);
 	gpsSortModel->sort(0, Qt::DescendingOrder);
 	QQmlContext *ctxt = engine.rootContext();
-	ctxt->setContextProperty("diveModel", DiveListSortModel::instance());
 	MobileFilterModel *mfm = MobileFilterModel::instance();
-	ctxt->setContextProperty("mobileListModel", mfm);
+	ctxt->setContextProperty("diveModel", mfm);
 	ctxt->setContextProperty("gpsModel", gpsSortModel);
 	ctxt->setContextProperty("vendorList", vendorList);
 	set_non_bt_addresses();
