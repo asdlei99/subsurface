@@ -108,6 +108,7 @@ public:
 	Q_INVOKABLE void setGitLocalOnly(const bool &value);
 	Q_INVOKABLE void setFilter(const QString filterText);
 	Q_INVOKABLE void toggle(int row);
+	Q_INVOKABLE void selectRow(int row);
 
 	static QMLManager *instance();
 	Q_INVOKABLE void registerError(QString error);
@@ -266,6 +267,7 @@ private:
 	struct dive *m_copyPasteDive = NULL;
 	struct dive_components what;
 	QAction *undoAction;
+	struct dive *diveInRow(int row);
 
 	bool verifyCredentials(QString email, QString password, QString pin);
 
