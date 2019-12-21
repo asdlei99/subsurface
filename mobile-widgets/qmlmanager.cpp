@@ -361,9 +361,8 @@ void QMLManager::openLocalThenRemote(QString url)
 }
 
 // Should we provide that function as courtesy directly in the model?
-struct dive *QMLManager::diveInRow(int row)
+static struct dive *diveInRow(const QAbstractItemModel *model, int row)
 {
-	MobileFilterModel *model = MobileFilterModel::instance();
 	QModelIndex index = model->index(row, 0, QModelIndex());
 	return index.isValid() ?  model->data(index, DiveTripModelBase::DIVE_ROLE).value<struct dive *>() : nullptr;
 }
@@ -375,7 +374,13 @@ void QMLManager::toggle(int row)
 
 void QMLManager::selectRow(int row)
 {
-	dive *d = diveInRow(row);
+	dive *d = diveInRow(MobileFilterModel::instance(), row);
+	select_single_dive(d);
+}
+
+void QMLManager::selectSwipeRow(int row)
+{
+	dive *d = diveInRow(MobileModels::instance()->swipeModel(), row);
 	select_single_dive(d);
 }
 
