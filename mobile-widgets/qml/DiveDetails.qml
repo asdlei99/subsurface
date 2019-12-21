@@ -314,6 +314,7 @@ Kirigami.Page {
 			highlightRangeMode: ListView.StrictlyEnforceRange
 			onMovementEnded: {
 				currentIndex = indexAt(contentX+1, 1);
+				manager.selectSwipeRow(currentIndex)
 			}
 			delegate: Flickable {
 				id: internalScrollView
