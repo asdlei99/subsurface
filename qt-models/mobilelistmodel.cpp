@@ -554,6 +554,11 @@ int MobileSwipeModel::mapTopLevelFromSource(int row) const
 	return firstElement.size() - row - 1;
 }
 
+int MobileSwipeModel::mapTopLevelFromSourceForInsert(int row) const
+{
+	return firstElement.size() - row;
+}
+
 int MobileSwipeModel::elementCountInTopLevel(int row) const
 {
 	if (row < 0 || row >= (int)firstElement.size())
@@ -645,15 +650,19 @@ void MobileSwipeModel::doneInsert(const QModelIndex &parent, int first, int last
 		std::vector<int> items;
 		items.reserve(last - first + 1);
 		int count = 0;
-		for (int row = last; row <= first; --row) {
+		for (int row = last; row >= first; --row) {
 			items.push_back(source->rowCount(source->index(row, 0)));
 			count += items.back();
 		}
 
-		int firstLocal = mapTopLevelFromSource(first);
-		beginInsertRows(QModelIndex(), firstLocal, firstLocal + count - 1);
-		addTopLevel(mapTopLevelFromSource(first), items);
-		endInsertRows();
+		int firstLocal = mapTopLevelFromSourceForInsert(first);
+		if (firstLocal >= 0) {
+			beginInsertRows(QModelIndex(), firstLocal, firstLocal + count - 1);
+			addTopLevel(firstLocal, items);
+			endInsertRows();
+		} else {
+			qWarning("MobileSwipeModel::doneInsert(): invalid source index!\n");
+		}
 	} else {
 		// This is part of a trip. Only the number of items has to be changed.
 		beginInsertRows(QModelIndex(), mapRowFromSource(parent, last), mapRowFromSource(parent, first));
