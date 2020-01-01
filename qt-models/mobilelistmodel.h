@@ -132,6 +132,7 @@ private:
 	// Translate indexes from/to source
 	QModelIndex mapToSource(const QModelIndex &index) const;
 	int mapTopLevelFromSource(int row) const;
+	int mapTopLevelFromSourceForInsert(int row) const;
 	int elementCountInTopLevel(int row) const;
 	int mapRowFromSource(const QModelIndex &parent, int row) const;
 	int mapRowFromSource(const QModelIndex &parent) const;
