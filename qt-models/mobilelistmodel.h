@@ -79,6 +79,7 @@ private:
 		QModelIndex parent;
 		int first, last;
 	};
+	std::vector<IndexRange> rangeStack;
 	QModelIndex sourceIndex(int row, int col, int parentRow = -1) const;
 	int numSubItems() const;
 	bool isExpandedRow(const QModelIndex &parent) const;
