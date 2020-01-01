@@ -117,38 +117,7 @@ Kirigami.ApplicationWindow {
 	}
 
 	function startAddDive() {
-		detailsWindow.state = "add"
-		detailsWindow.dive_id = manager.addDive();
-		detailsWindow.number = manager.getNumber(detailsWindow.dive_id)
-		detailsWindow.date = manager.getDate(detailsWindow.dive_id)
-		detailsWindow.airtemp = ""
-		detailsWindow.watertemp = ""
-		detailsWindow.buddyModel = manager.buddyList
-		detailsWindow.buddyIndex = -1
-		detailsWindow.buddyText = ""
-		detailsWindow.depth = ""
-		detailsWindow.divemasterModel = manager.divemasterList
-		detailsWindow.divemasterIndex = -1
-		detailsWindow.divemasterText = ""
-		detailsWindow.notes = ""
-		detailsWindow.location = ""
-		detailsWindow.gps = ""
-		detailsWindow.duration = ""
-		detailsWindow.suitModel = manager.suitList
-		detailsWindow.suitIndex = -1
-		detailsWindow.suitText = ""
-		detailsWindow.cylinderModel0 = manager.cylinderInit
-		detailsWindow.cylinderModel1 = manager.cylinderInit
-		detailsWindow.cylinderModel2 = manager.cylinderInit
-		detailsWindow.cylinderModel3 = manager.cylinderInit
-		detailsWindow.cylinderModel4 = manager.cylinderInit
-		detailsWindow.cylinderIndex0 = PrefGeneral.default_cylinder == "" ? -1 : detailsWindow.cylinderModel0.indexOf(PrefGeneral.default_cylinder)
-		detailsWindow.usedCyl = ["",]
-		detailsWindow.weight = ""
-		detailsWindow.usedGas = []
-		detailsWindow.startpressure = []
-		detailsWindow.endpressure = []
-		detailsWindow.gpsCheckbox = false
+		manager.addDive();
 		pageStack.push(detailsWindow)
 	}
 
