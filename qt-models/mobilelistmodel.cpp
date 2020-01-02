@@ -618,8 +618,9 @@ int MobileSwipeModel::removeTopLevel(int begin, int end)
 // Add or remove subitems from top-level items
 void MobileSwipeModel::updateTopLevel(int row, int delta)
 {
-	for (int i = row; i < (int)firstElement.size(); ++i)
+	for (int i = row + 1; i < (int)firstElement.size(); ++i)
 		firstElement[i] += delta;
+	rows += delta;
 }
 
 // Add items at top-level. The number of subelements of each items is given in the second parameter.
