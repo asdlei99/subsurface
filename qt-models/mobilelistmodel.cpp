@@ -182,12 +182,24 @@ MobileListModel::IndexRange MobileListModel::mapRangeFromSource(const QModelInde
 // This is fun: when inserting, we point to the item *before* which we
 // want to insert. But by inverting the direction we turn that into the item
 // *after* which we want to insert. Thus, we have to add one to the range.
+// Moreover, here we have to use the first item. TODO: We can remove this
+// function once the core-model is sorted appropriately.
 MobileListModel::IndexRange MobileListModel::mapRangeFromSourceForInsert(const QModelIndex &parent, int first, int last) const
 {
-	IndexRange res = mapRangeFromSource(parent, first, last);
-	++res.first;
-	++res.last;
-	return res;
+	int num = last - first;
+	if (!parent.isValid()) {
+		first = mapRowFromSourceTopLevel(first);
+		return { true, first + 1, first + 1 + num };
+	} else {
+		int parentRow = invertRow(QModelIndex(), parent.row());
+		QModelIndex parentIndex = createIndex(parentRow, 0);
+		if (isExpandedRow(parentIndex)) {
+			first = mapRowFromSourceTrip(parent, parentRow, first);
+			return { true, first + 1, first + 1 + num };
+		} else {
+			return { false, -1, -1 };
+		}
+	}
 }
 
 QModelIndex MobileListModel::mapFromSource(const QModelIndex &idx) const
