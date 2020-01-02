@@ -76,7 +76,7 @@ public:
 	void toggle(int row);
 private:
 	struct IndexRange {
-		QModelIndex parent;
+		bool visible;
 		int first, last;
 	};
 	std::vector<IndexRange> rangeStack;
