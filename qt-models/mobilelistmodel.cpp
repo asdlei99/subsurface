@@ -162,10 +162,13 @@ int MobileListModel::mapRowFromSource(const QModelIndex &parent, int row) const
 
 MobileListModel::IndexRange MobileListModel::mapRangeFromSource(const QModelIndex &parent, int first, int last) const
 {
-	int num = last - first;
+	int num = last - first; // Actually, that is num - 1 owing to Qt's bizarre range semantics!
 	// Since we invert the direction, the last will be the first.
 	if (!parent.isValid()) {
 		first = mapRowFromSourceTopLevel(last);
+		// If this includes the extended row, we have to add the subitems
+		if (first <= expandedRow && first + num >= expandedRow)
+			num += numSubItems();
 		return { true, first, first + num };
 	} else {
 		int parentRow = invertRow(QModelIndex(), parent.row());
