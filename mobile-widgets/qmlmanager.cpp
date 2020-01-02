@@ -293,7 +293,6 @@ void QMLManager::applicationStateChanged(Qt::ApplicationState state)
 
 void QMLManager::openLocalThenRemote(QString url)
 {
-	DiveListModel::instance()->clear();
 	MobileModels::instance()->clear();
 	setNotificationText(tr("Open local dive data file"));
 	QByteArray fileNamePrt = QFile::encodeName(url);
@@ -334,7 +333,6 @@ void QMLManager::openLocalThenRemote(QString url)
 		qPrefTechnicalDetails::set_show_ccr_sensors(git_prefs.show_ccr_sensors);
 		qPrefPartialPressureGas::set_po2(git_prefs.pp_graphs.po2);
 		process_loaded_dives();
-		DiveListModel::instance()->reload();
 		MobileModels::instance()->reset();
 		appendTextToLog(QStringLiteral("%1 dives loaded from cache").arg(dive_table.nr));
 		setNotificationText(tr("%1 dives loaded from local dive data file").arg(dive_table.nr));
@@ -591,7 +589,6 @@ void QMLManager::saveCloudCredentials()
 		manager()->clearAccessCache(); // remove any chached credentials
 		clear_git_id(); // invalidate our remembered GIT SHA
 		MobileModels::instance()->clear();
-		DiveListModel::instance()->reload();
 		GpsListModel::instance()->clear();
 		setStartPageText(tr("Attempting to open cloud storage with new credentials"));
 		// we therefore know that no one else is already accessing THIS git repo;
@@ -788,7 +785,7 @@ void QMLManager::loadDivesWithValidCredentials()
 	// if we aren't switching from no-cloud mode, let's clear the dive data
 	if (!noCloudToCloud) {
 		appendTextToLog("Clear out in memory dive data");
-		DiveListModel::instance()->clear();
+		MobileModels::instance()->clear();
 	} else {
 		appendTextToLog("Switching from no cloud mode; keep in memory dive data");
 	}
@@ -819,7 +816,7 @@ successful_exit:
 	if (noCloudToCloud) {
 		git_storage_update_progress(qPrintable(tr("Loading dives from local storage ('no cloud' mode)")));
 		mergeLocalRepo();
-		DiveListModel::instance()->reload();
+		MobileModels::instance()->reset();
 		appendTextToLog(QStringLiteral("%1 dives loaded after importing nocloud local storage").arg(dive_table.nr));
 		noCloudToCloud = false;
 		mark_divelist_changed(true);
@@ -881,7 +878,7 @@ void QMLManager::consumeFinishedLoad(timestamp_t currentDiveTimestamp)
 	prefs.show_ccr_sensors = git_prefs.show_ccr_sensors;
 	prefs.pp_graphs.po2 = git_prefs.pp_graphs.po2;
 	process_loaded_dives();
-	DiveListModel::instance()->reload();
+	MobileModels::instance()->reset();
 	if (currentDiveTimestamp)
 		setUpdateSelectedDive(DiveListSortModel::instance()->getIdxForId(get_dive_id_closest_to(currentDiveTimestamp)));
 	appendTextToLog(QStringLiteral("%1 dives loaded").arg(dive_table.nr));
@@ -892,7 +889,7 @@ void QMLManager::consumeFinishedLoad(timestamp_t currentDiveTimestamp)
 
 void QMLManager::refreshDiveList()
 {
-	DiveListModel::instance()->reload();
+	MobileModels::instance()->reset();
 }
 
 void QMLManager::setupDivesite(struct dive *d, struct dive_site *ds, double lat, double lon, const char *locationtext)
