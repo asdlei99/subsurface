@@ -431,18 +431,10 @@ Kirigami.Page {
 					manager.appendTextToLog("Save downloaded dives that were selected")
 					busy = true
 					rootItem.showBusy("Save selected dives")
-					manager.appendTextToLog("temporary disconnecting dive list model")
-					diveList.diveListModel = null
 					manager.appendTextToLog("Record dives")
 					importModel.recordDives()
-					manager.saveChangesLocal()
-					manager.appendTextToLog("resetting model and refreshing the dive list")
-					diveModel.resetInternalData()
-					manager.refreshDiveList()
 					manager.appendTextToLog("pageStack popping Download page")
 					pageStack.pop()
-					manager.appendTextToLog("setting up the dive list model again")
-					diveList.diveListModel = diveModel
 					manager.appendTextToLog("pageStack switching to dive list")
 					showDiveList()
 					download.text = qsTr("Download")
@@ -483,7 +475,6 @@ Kirigami.Page {
 				comboVendor.currentIndex = manager.getDetectedVendorIndex()
 				comboProduct.currentIndex = manager.getDetectedProductIndex(comboVendor.currentText)
 				comboConnection.currentIndex = manager.getMatchingAddress(comboVendor.currentText, comboProduct.currentText)
-
 			}
 		}
 	}
