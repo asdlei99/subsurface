@@ -630,12 +630,27 @@ void MobileSwipeModel::updateTopLevel(int row, int delta)
 }
 
 // Add items at top-level. The number of subelements of each items is given in the second parameter.
-void MobileSwipeModel::addTopLevel(int row, const std::vector<int> &items)
+void MobileSwipeModel::addTopLevel(int row, std::vector<int> items)
 {
-	int count = std::accumulate(items.begin(), items.end(), 0); // Number of items we are going to add
+	// We get an array with the number of items per inserted row.
+	// Transform that to the first element in each row.
+	int nextEl = row < (int)firstElement.size() ? firstElement[row] : rows;
+	int count = 0;
+	for (int &item: items) {
+		int num = item;
+		item = nextEl;
+		nextEl += num;
+		count += num;
+	}
+
+	// Now, increase the first element of the items after the inserted range
+	// by the number of inserted items.
 	auto it = firstElement.begin() + row;
 	for (auto act = it; act != firstElement.end(); ++act)
 		*act += count;
+	rows += count;
+
+	// Insert the range
 	firstElement.insert(it, items.begin(), items.end());
 }
 
@@ -682,7 +697,7 @@ void MobileSwipeModel::doneInsert(const QModelIndex &parent, int first, int last
 		int firstLocal = mapTopLevelFromSourceForInsert(first);
 		if (firstLocal >= 0) {
 			beginInsertRows(QModelIndex(), firstLocal, firstLocal + count - 1);
-			addTopLevel(firstLocal, items);
+			addTopLevel(firstLocal, std::move(items));
 			endInsertRows();
 		} else {
 			qWarning("MobileSwipeModel::doneInsert(): invalid source index!\n");
@@ -722,7 +737,7 @@ void MobileSwipeModel::doneMove(const QModelIndex &parent, int first, int last, 
 
 			if (destLocal >= beginLocal)
 				destLocal -= count;
-			addTopLevel(destLocal, items);
+			addTopLevel(destLocal, std::move(items));
 		}
 	} else if (!parent.isValid() && dest.isValid()) {
 		// From top-level to trip
@@ -741,7 +756,7 @@ void MobileSwipeModel::doneMove(const QModelIndex &parent, int first, int last, 
 		int numMoved = last - first + 1;
 		std::vector<int> items(numMoved, 1); // This can only be dives -> item count is 1
 		updateTopLevel(fromLocal, -numMoved);
-		addTopLevel(toLocal, items);
+		addTopLevel(toLocal, std::move(items));
 	} else {
 		// From trip to other trip
 		int fromLocal = mapTopLevelFromSource(parent.row());
