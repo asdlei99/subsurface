@@ -611,10 +611,13 @@ int MobileSwipeModel::removeTopLevel(int begin, int end)
 {
 	auto it1 = firstElement.begin() + begin;
 	auto it2 = firstElement.begin() + end;
-	int count = std::accumulate(it1, it2, 0); // Number of items we have to subtract from rest
+	int count = 0; // Number of items we have to subtract from rest
+	for (int row = begin; row < end; ++row)
+		count += elementCountInTopLevel(row);
 	firstElement.erase(it1, it2); // Remove items
 	for (auto act = firstElement.begin() + begin; act != firstElement.end(); ++act)
 		*act -= count; // Subtract removed items
+	rows -= count;
 	return count;
 }
 
