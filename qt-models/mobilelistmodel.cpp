@@ -166,11 +166,16 @@ MobileListModel::IndexRange MobileListModel::mapRangeFromSource(const QModelInde
 	// Since we invert the direction, the last will be the first.
 	if (!parent.isValid()) {
 		first = mapRowFromSourceTopLevel(last);
-		return { QModelIndex(), first, first + num };
+		return { true, first, first + num };
 	} else {
 		int parentRow = invertRow(QModelIndex(), parent.row());
-		first = mapRowFromSourceTrip(parent, parentRow, last);
-		return { createIndex(parentRow, 0), first, first + num };
+		QModelIndex parentIndex = createIndex(parentRow, 0);
+		if (isExpandedRow(parentIndex)) {
+			first = mapRowFromSourceTrip(parent, parentRow, last);
+			return { true, first, first + num };
+		} else {
+			return { false, -1, -1 };
+		}
 	}
 }
 
@@ -236,7 +241,7 @@ void MobileListModel::prepareRemove(const QModelIndex &parent, int first, int la
 {
 	IndexRange range = mapRangeFromSource(parent, first, last);
 	rangeStack.push_back(range);
-	if (isExpandedRow(range.parent))
+	if (range.visible)
 		beginRemoveRows(QModelIndex(), range.first, range.last);
 }
 
@@ -253,7 +258,7 @@ void MobileListModel::updateRowAfterRemove(const IndexRange &range, int &row)
 void MobileListModel::doneRemove(const QModelIndex &parent, int first, int last)
 {
 	IndexRange range = pop(rangeStack);
-	if (isExpandedRow(range.parent)) {
+	if (range.visible) {
 		// Check if we have to move or remove the expanded or current item
 		updateRowAfterRemove(range, expandedRow);
 		updateRowAfterRemove(range, currentRow);
@@ -266,14 +271,14 @@ void MobileListModel::prepareInsert(const QModelIndex &parent, int first, int la
 {
 	IndexRange range = mapRangeFromSourceForInsert(parent, first, last);
 	rangeStack.push_back(range);
-	if (isExpandedRow(range.parent))
+	if (range.visible)
 		beginInsertRows(QModelIndex(), range.first, range.last);
 }
 
 void MobileListModel::doneInsert(const QModelIndex &parent, int first, int last)
 {
 	IndexRange range = pop(rangeStack);
-	if (isExpandedRow(range.parent)) {
+	if (range.visible) {
 		// Check if we have to move the expanded item
 		if (!parent.isValid() && expandedRow >= 0 && range.first <= expandedRow)
 			expandedRow += last - first + 1;
@@ -292,11 +297,11 @@ void MobileListModel::prepareMove(const QModelIndex &parent, int first, int last
 	IndexRange rangeDest = mapRangeFromSourceForInsert(dest, destRow, destRow);
 	rangeStack.push_back(range);
 	rangeStack.push_back(rangeDest);
-	if (!isExpandedRow(range.parent) && !isExpandedRow(rangeDest.parent))
+	if (!range.visible && !rangeDest.visible)
 		return;
-	if (isExpandedRow(range.parent) && !isExpandedRow(rangeDest.parent))
+	if (range.visible && !rangeDest.visible)
 		return prepareRemove(parent, first, last);
-	if (!isExpandedRow(range.parent) && isExpandedRow(dest))
+	if (!range.visible && rangeDest.visible)
 		return prepareInsert(parent, first, last);
 	beginMoveRows(QModelIndex(), range.first, range.last, QModelIndex(), rangeDest.first);
 }
@@ -324,11 +329,11 @@ void MobileListModel::doneMove(const QModelIndex &parent, int first, int last, c
 {
 	IndexRange rangeDest = pop(rangeStack);
 	IndexRange range = pop(rangeStack);
-	if (!isExpandedRow(range.parent) && !isExpandedRow(rangeDest.parent))
+	if (!range.visible && !rangeDest.visible)
 		return;
-	if (isExpandedRow(range.parent) && !isExpandedRow(rangeDest.parent))
+	if (range.visible && !rangeDest.visible)
 		return doneRemove(parent, first, last);
-	if (!isExpandedRow(range.parent) && isExpandedRow(dest))
+	if (!range.visible && rangeDest.visible)
 		return doneInsert(parent, first, last);
 	updateRowAfterMove(range, rangeDest, expandedRow);
 	updateRowAfterMove(range, rangeDest, currentRow);
@@ -387,7 +392,7 @@ void MobileListModel::changed(const QModelIndex &topLeft, const QModelIndex &bot
 
 		// Now check whether this even expanded
 		IndexRange range = mapRangeFromSource(topLeft.parent(), topLeft.row(), bottomRight.row());
-		if (!isExpandedRow(range.parent))
+		if (range.visible)
 			return;
 
 		dataChanged(createIndex(range.first, topLeft.column()), createIndex(range.last, bottomRight.column()), roles);
