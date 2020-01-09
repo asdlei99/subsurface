@@ -44,7 +44,7 @@ Kirigami.ScrollablePage {
 				left: parent.left
 				right: parent.right
 			}
-			height: (isTrip ? 9 : 10) * Kirigami.Units.smallSpacing // delegateInnerItem.height
+			height: (isTrip ? 9 : 11) * Kirigami.Units.smallSpacing // delegateInnerItem.height
 			backgroundColor: checked ? subsurfaceTheme.primaryColor : subsurfaceTheme.backgroundColor
 			activeBackgroundColor: subsurfaceTheme.primaryColor
 			textColor: checked ? subsurfaceTheme.primaryTextColor : subsurfaceTheme.textColor
@@ -164,7 +164,7 @@ Kirigami.ScrollablePage {
 						}
 						Item {
 							id: diveListEntry
-							height: visible ? Math.ceil(childrenRect.height ) : 0
+							height: visible ? 10 * Kirigami.Units.smallSpacing : 0
 							anchors {
 								right: parent.right
 								left: leftBarDive.right
