@@ -36,21 +36,20 @@ Kirigami.ScrollablePage {
 		Kirigami.AbstractListItem {
 			// this allows us to access properties of the currentItem from outside
 			property variant myData: model
+			property var view: ListView.view
 			id: diveOrTripDelegateItem
 			padding: 0
 			supportsMouseEvents: true
-			checked: !isTrip && current
+			//checked: !isTrip && current
 			anchors {
 				left: parent.left
 				right: parent.right
 			}
-			height: (isTrip ? 9 : 10) * Kirigami.Units.smallSpacing // delegateInnerItem.height
-			backgroundColor: checked ? subsurfaceTheme.primaryColor : subsurfaceTheme.backgroundColor
-			activeBackgroundColor: subsurfaceTheme.primaryColor
-			textColor: checked ? subsurfaceTheme.primaryTextColor : subsurfaceTheme.textColor
+			height: (isTrip ? 9 : 11) * Kirigami.Units.smallSpacing // delegateInnerItem.height
 
 			// When clicked, a trip expands / unexpands, a dive is opened in DiveDetails
 			onClicked: {
+				view.currentIndex = index
 				if (isTrip) {
 					manager.appendTextToLog("clicked on trip " + tripTitle)
 					manager.toggle(model.row);
@@ -111,7 +110,6 @@ Kirigami.ScrollablePage {
 						}
 					}
 					Controls.Label {
-						id: sectionText
 						text: visible ? tripTitle : ""
 						elide: Text.ElideRight
 						visible: headingBackground.visible
@@ -145,7 +143,7 @@ Kirigami.ScrollablePage {
 						left: parent.left
 						right: parent.right
 					}
-					color: subsurfaceTheme.backgroundColor
+					color: index ===  view.currentIndex ? subsurfaceTheme.lightPrimaryColor : subsurfaceTheme.backgroundColor
 					visible: !isTrip
 					Item {
 						anchors.fill: parent
@@ -153,7 +151,7 @@ Kirigami.ScrollablePage {
 							id: leftBarDive
 							width: Kirigami.Units.smallSpacing
 							height: isTopLevel ? 0 : diveListEntry.height * 0.8
-							color: subsurfaceTheme.lightPrimaryColor
+							color: index !==  view.currentIndex ? subsurfaceTheme.lightPrimaryColor : subsurfaceTheme.backgroundColor
 							anchors {
 								left: parent.left
 								top: parent.top
@@ -164,7 +162,7 @@ Kirigami.ScrollablePage {
 						}
 						Item {
 							id: diveListEntry
-							height: visible ? Math.ceil(childrenRect.height ) : 0
+							height: visible ? 10 * Kirigami.Units.smallSpacing : 0
 							anchors {
 								right: parent.right
 								left: leftBarDive.right
@@ -198,7 +196,7 @@ Kirigami.ScrollablePage {
 									text: (undefined !== dateTime) ? dateTime : ""
 									width: Math.max(locationText.width * 0.45, paintedWidth) // helps vertical alignment throughout listview
 									font.pointSize: subsurfaceTheme.smallPointSize
-									color: diveOrTripDelegateItem.checked ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
+									color: subsurfaceTheme.secondaryTextColor
 								}
 								// spacer, just in case
 								Controls.Label {
@@ -210,14 +208,14 @@ Kirigami.ScrollablePage {
 									text: (undefined !== depthDuration) ? depthDuration : ""
 									width: Math.max(Kirigami.Units.gridUnit * 3, paintedWidth) // helps vertical alignment throughout listview
 									font.pointSize: subsurfaceTheme.smallPointSize
-									color: diveOrTripDelegateItem.checked ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
+									color: subsurfaceTheme.secondaryTextColor
 								}
 							}
 							Controls.Label {
 								id: numberText
 								text: "#" + number
 								font.pointSize: subsurfaceTheme.smallPointSize
-								color: diveOrTripDelegateItem.checked ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
+								color: subsurfaceTheme.secondaryTextColor
 								anchors {
 									right: parent.right
 									rightMargin: Kirigami.Units.smallSpacing
