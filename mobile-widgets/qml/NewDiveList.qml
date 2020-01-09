@@ -45,9 +45,6 @@ Kirigami.ScrollablePage {
 				right: parent.right
 			}
 			height: (isTrip ? 9 : 11) * Kirigami.Units.smallSpacing // delegateInnerItem.height
-			backgroundColor: checked ? subsurfaceTheme.primaryColor : subsurfaceTheme.backgroundColor
-			activeBackgroundColor: subsurfaceTheme.primaryColor
-			textColor: checked ? subsurfaceTheme.primaryTextColor : subsurfaceTheme.textColor
 
 			// When clicked, a trip expands / unexpands, a dive is opened in DiveDetails
 			onClicked: {
