@@ -111,7 +111,6 @@ Kirigami.ScrollablePage {
 						}
 					}
 					Controls.Label {
-						id: sectionText
 						text: visible ? tripTitle : ""
 						elide: Text.ElideRight
 						visible: headingBackground.visible
