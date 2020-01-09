@@ -236,7 +236,7 @@ int MobileListModel::rowCount(const QModelIndex &parent) const
 QVariant MobileListModel::data(const QModelIndex &index, int role) const
 {
 	if (role == IsTopLevelRole)
-		return index.row() <= expandedRow || index.row() > expandedRow + 1 + numSubItems();
+		return index.row() <= expandedRow || index.row() > expandedRow + numSubItems();
 	else if (role == CurrentRole)
 		return index.row() == currentRow;
 
