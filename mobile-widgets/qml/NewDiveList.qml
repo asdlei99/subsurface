@@ -230,7 +230,6 @@ Kirigami.ScrollablePage {
 			}
 		}
 	}
-
 	StartPage {
 		id: startPage
 		anchors.fill: parent
