@@ -20,7 +20,6 @@
 
 #include <QBluetoothLocalDevice>
 
-#include "qt-models/divelistmodel.h"
 #include "qt-models/gpslistmodel.h"
 #include "qt-models/completionmodels.h"
 #include "qt-models/messagehandlermodel.h"
@@ -47,6 +46,7 @@
 #include "core/settings/qPrefTechnicalDetails.h"
 #include "core/settings/qPrefPartialPressureGas.h"
 #include "core/settings/qPrefUnit.h"
+#include "core/subsurface-qt/DiveObjectHelper.h"
 #include "core/trip.h"
 #include "core/exportfuncs.h"
 #include "core/worldmap-save.h"
@@ -1347,8 +1347,6 @@ void QMLManager::selectDive(int id)
 	}
 	if (amount_selected == 0)
 		qWarning("QManager::selectDive() called with unknown id");
-	// else
-	// FIXME:	CollapsedDiveListSortModel::instance()->updateSelectionState();
 }
 
 void QMLManager::deleteDive(int id)

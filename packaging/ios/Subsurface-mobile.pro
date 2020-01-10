@@ -108,7 +108,6 @@ SOURCES += ../../subsurface-mobile-main.cpp \
 	../../core/subsurface-qt/DiveListNotifier.cpp \
 	../../mobile-widgets/qmlmanager.cpp \
 	../../mobile-widgets/qmlprefs.cpp \
-	../../qt-models/divelistmodel.cpp \
 	../../qt-models/diveplotdatamodel.cpp \
 	../../qt-models/gpslistmodel.cpp \
 	../../qt-models/completionmodels.cpp \
@@ -233,7 +232,6 @@ HEADERS += \
 	../../mobile-widgets/qmlmanager.h \
 	../../mobile-widgets/qmlprefs.h \
 	../../map-widget/qmlmapwidgethelper.h \
-	../../qt-models/divelistmodel.h \
 	../../qt-models/diveplotdatamodel.h \
 	../../qt-models/gpslistmodel.h \
 	../../qt-models/divelocationmodel.h \
