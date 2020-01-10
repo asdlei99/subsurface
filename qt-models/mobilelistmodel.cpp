@@ -460,11 +460,22 @@ void MobileListModel::toggle(int row)
 
 void MobileListModel::currentDiveChangedSlot(QModelIndex index)
 {
+	// There is an interesting special case if we are showing a top level dive
+	// and are switching to the dive above it in the dive list (so the next dive
+	// in chronological order, but above, or 'previous' on the screen) which is
+	// the last one in a trip by swiping the dive details.
+	// In this case we had no expanded trip before the swipe, but by selecting
+	// the new dive we implicitly expand the trip and therefore change the
+	// index of the top level dive that was previously selected.
+	bool noTripExpanded = expandedRow < 0;
 	// If this is in a trip, expand the trip first,
 	// potentially removing the old current dive.
 	if (index.parent().isValid()) {
 		int row = mapRowFromSourceTopLevel(index.parent().row());
 		expand(row);
+		// make sure we adjust our notion of which row was previously shown
+		if (noTripExpanded && currentRow > row)
+			currentRow += numSubItems();
 	} else {
 		// If outside of a trip, collapse any expanded trip.
 		unexpand();
