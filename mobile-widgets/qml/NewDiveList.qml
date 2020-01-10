@@ -151,7 +151,7 @@ Kirigami.ScrollablePage {
 						left: parent.left
 						right: parent.right
 					}
-					color: index ===  view.currentIndex ? subsurfaceTheme.lightPrimaryColor : subsurfaceTheme.backgroundColor
+					color: selected ? subsurfaceTheme.lightPrimaryColor : subsurfaceTheme.backgroundColor
 					visible: !isTrip
 					Item {
 						anchors.fill: parent
@@ -159,7 +159,7 @@ Kirigami.ScrollablePage {
 							id: leftBarDive
 							width: Kirigami.Units.smallSpacing
 							height: isTopLevel ? 0 : diveListEntry.height * 0.8
-							color: index !==  view.currentIndex ? subsurfaceTheme.lightPrimaryColor : subsurfaceTheme.backgroundColor
+							color: selected ? subsurfaceTheme.backgroundColor :subsurfaceTheme.lightPrimaryColor // reverse of the diveBackground
 							anchors {
 								left: parent.left
 								top: parent.top
