@@ -13,7 +13,6 @@
 #include "core/btdiscovery.h"
 #include "core/gpslocation.h"
 #include "core/downloadfromdcthread.h"
-#include "qt-models/divelistmodel.h"
 #include "qt-models/completionmodels.h"
 #include "qt-models/divelocationmodel.h"
 #include "core/settings/qPrefCloudStorage.h"
@@ -21,6 +20,7 @@
 #define NOCLOUD_LOCALSTORAGE format_string("%s/cloudstorage/localrepo[master]", system_default_directory())
 
 class QAction;
+class DiveObjectHelper;
 
 class QMLManager : public QObject {
 	Q_OBJECT
@@ -142,8 +142,6 @@ public:
 	void setBtEnabled(bool value);
 
 	void setShowNonDiveComputers(bool show);
-
-	DiveListSortModel *dlSortModel;
 
 	QStringList suitList() const;
 	QStringList buddyList() const;

@@ -16,7 +16,6 @@
 #include "mobile-widgets/themeinterface.h"
 #include "mobile-widgets/qmlmanager.h"
 #include "mobile-widgets/qmlinterface.h"
-#include "qt-models/divelistmodel.h"
 #include "qt-models/divesummarymodel.h"
 #include "qt-models/mobilelistmodel.h"
 #include "qt-models/mobilefiltermodel.h"
