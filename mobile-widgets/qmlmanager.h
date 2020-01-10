@@ -30,7 +30,6 @@ class QMLManager : public QObject {
 	Q_PROPERTY(QString startPageText MEMBER m_startPageText WRITE setStartPageText NOTIFY startPageTextChanged)
 	Q_PROPERTY(bool verboseEnabled MEMBER m_verboseEnabled WRITE setVerboseEnabled NOTIFY verboseEnabledChanged)
 	Q_PROPERTY(QString notificationText MEMBER m_notificationText WRITE setNotificationText NOTIFY notificationTextChanged)
-	Q_PROPERTY(int updateSelectedDive MEMBER m_updateSelectedDive WRITE setUpdateSelectedDive NOTIFY updateSelectedDiveChanged)
 	Q_PROPERTY(int selectedDiveTimestamp MEMBER m_selectedDiveTimestamp WRITE setSelectedDiveTimestamp NOTIFY selectedDiveTimestampChanged)
 	Q_PROPERTY(QStringList suitList READ suitList NOTIFY suitListChanged)
 	Q_PROPERTY(QStringList buddyList READ buddyList NOTIFY buddyListChanged)
@@ -140,9 +139,6 @@ public:
 	QString notificationText() const;
 	void setNotificationText(QString text);
 
-	int updateSelectedDive() const;
-	void setUpdateSelectedDive(int idx);
-
 	int selectedDiveTimestamp() const;
 	void setSelectedDiveTimestamp(int when);
 
@@ -222,7 +218,7 @@ public slots:
 	QString getVersion() const;
 	void deleteGpsFix(quint64 when);
 	void revertToNoCloudIfNeeded();
-	void consumeFinishedLoad(timestamp_t currentDiveTimestamp);
+	void consumeFinishedLoad();
 	void refreshDiveList();
 	void screenChanged(QScreen *screen);
 	qreal lastDevicePixelRatio();
@@ -248,7 +244,6 @@ private:
 	bool m_loadFromCloud;
 	static QMLManager *m_instance;
 	QString m_notificationText;
-	int m_updateSelectedDive;
 	int m_selectedDiveTimestamp;
 	qreal m_lastDevicePixelRatio;
 	QElapsedTimer timer;
@@ -284,7 +279,6 @@ signals:
 	void loadFromCloudChanged();
 	void startPageTextChanged();
 	void notificationTextChanged();
-	void updateSelectedDiveChanged();
 	void selectedDiveTimestampChanged();
 	void sendScreenChanged(QScreen *screen);
 	void progressMessageChanged();

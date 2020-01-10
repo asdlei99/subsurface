@@ -151,7 +151,6 @@ void QMLManager::btRescan()
 
 QMLManager::QMLManager() : m_locationServiceEnabled(false),
 	m_verboseEnabled(false),
-	m_updateSelectedDive(-1),
 	m_selectedDiveTimestamp(0),
 	alreadySaving(false),
 	m_pluggedInDeviceName(""),
@@ -490,7 +489,7 @@ void QMLManager::finishSetup()
 			set_filename(NULL);
 		} else {
 			// successfully opened the local file, now add thigs to the dive list
-			consumeFinishedLoad(0);
+			consumeFinishedLoad();
 			appendTextToLog(QString("working in no-cloud mode, finished loading %1 dives from %2").arg(dive_table.nr).arg(existing_filename));
 		}
 	} else {
@@ -766,7 +765,6 @@ void QMLManager::retrieveUserid()
 void QMLManager::loadDivesWithValidCredentials()
 {
 	QString url;
-	timestamp_t currentDiveTimestamp = m_selectedDiveTimestamp;
 	if (getCloudURL(url)) {
 		setStartPageText(RED_FONT + tr("Cloud storage error: %1").arg(consumeError()) + END_FONT);
 		revertToNoCloudIfNeeded();
@@ -806,7 +804,7 @@ void QMLManager::loadDivesWithValidCredentials()
 		set_filename(NULL);
 		return;
 	}
-	consumeFinishedLoad(currentDiveTimestamp);
+	consumeFinishedLoad();
 
 successful_exit:
 	alreadySaving = false;
@@ -864,7 +862,7 @@ void QMLManager::revertToNoCloudIfNeeded()
 	alreadySaving = false;
 }
 
-void QMLManager::consumeFinishedLoad(timestamp_t currentDiveTimestamp)
+void QMLManager::consumeFinishedLoad()
 {
 	prefs.unit_system = git_prefs.unit_system;
 	if (git_prefs.unit_system == IMPERIAL)
@@ -879,8 +877,6 @@ void QMLManager::consumeFinishedLoad(timestamp_t currentDiveTimestamp)
 	prefs.pp_graphs.po2 = git_prefs.pp_graphs.po2;
 	process_loaded_dives();
 	MobileModels::instance()->reset();
-	if (currentDiveTimestamp)
-		setUpdateSelectedDive(DiveListSortModel::instance()->getIdxForId(get_dive_id_closest_to(currentDiveTimestamp)));
 	appendTextToLog(QStringLiteral("%1 dives loaded").arg(dive_table.nr));
 	if (dive_table.nr == 0)
 		setStartPageText(tr("Cloud storage open successfully. No dives in dive list."));
@@ -1645,12 +1641,6 @@ void QMLManager::setNotificationText(QString text)
 {
 	m_notificationText = text;
 	emit notificationTextChanged();
-}
-
-void QMLManager::setUpdateSelectedDive(int idx)
-{
-	m_updateSelectedDive = idx;
-	emit updateSelectedDiveChanged();
 }
 
 void QMLManager::setSelectedDiveTimestamp(int when)
