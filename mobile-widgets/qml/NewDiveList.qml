@@ -37,15 +37,23 @@ Kirigami.ScrollablePage {
 			// this allows us to access properties of the currentItem from outside
 			property variant myData: model
 			property var view: ListView.view
+			property bool selected: !isTrip && current // don't use 'checked' for this as that confuses QML as it tries
 			id: diveOrTripDelegateItem
 			padding: 0
 			supportsMouseEvents: true
-			//checked: !isTrip && current
 			anchors {
 				left: parent.left
 				right: parent.right
 			}
 			height: (isTrip ? 9 : 11) * Kirigami.Units.smallSpacing // delegateInnerItem.height
+
+			onSelectedChanged: {
+				console.log("index " + index + " select changed to " + selected)
+				if (selected && index !== view.currentIndex) {
+					view.currentIndex = index;
+					console.log("updated view.currentIndex")
+				}
+			}
 
 			// When clicked, a trip expands / unexpands, a dive is opened in DiveDetails
 			onClicked: {
@@ -230,6 +238,14 @@ Kirigami.ScrollablePage {
 			}
 		}
 	}
+	contextualActions: [
+		Kirigami.Action {
+			text: qsTr("Undo")
+		},
+		Kirigami.Action {
+			text: qsTr ("Remove dive from trip")
+		}
+	]
 
 	StartPage {
 		id: startPage
