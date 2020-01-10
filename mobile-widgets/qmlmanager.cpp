@@ -1106,13 +1106,13 @@ void QMLManager::commitChanges(QString diveId, QString number, QString date, QSt
 
 	bool diveChanged = false;
 
-	diveChanged |= checkDate(myDive, d, date);
-	diveChanged |= checkLocation(myDive, d, location, gps);
-	diveChanged |= checkDuration(myDive, d, duration);
-	diveChanged |= checkDepth(myDive, d, depth);
-	diveChanged |= Command::editNumber(number.toInt(), true) > 0;
-	diveChanged |= Command::editAirTemp(parseTemperatureToMkelvin(airtemp), false) > 0;
-	diveChanged |= Command::editWaterTemp(parseTemperatureToMkelvin(watertemp), false) > 0;
+	checkDate(myDive, d, date);
+	checkLocation(myDive, d, location, gps);
+	checkDuration(myDive, d, duration);
+	checkDepth(myDive, d, depth);
+	Command::editNumber(number.toInt(), true);
+	Command::editAirTemp(parseTemperatureToMkelvin(airtemp), false);
+	Command::editWaterTemp(parseTemperatureToMkelvin(watertemp), false);
 
 	// TODO: Undo for weight-system not yet implemented
 	if (myDive.sumWeight != weight) {
@@ -1193,12 +1193,12 @@ void QMLManager::commitChanges(QString diveId, QString number, QString date, QSt
 			k++;
 		}
 	}
-	diveChanged |= Command::editSuit(suit, false) > 0;
-	diveChanged |= Command::editBuddies(stringToList(buddy), false) > 0;
-	diveChanged |= Command::editDiveMaster(stringToList(diveMaster), false) > 0;
-	diveChanged |= Command::editVisibility(visibility, false) > 0;
-	diveChanged |= Command::editNotes(notes, false) > 0;
-	if (diveChanged)
+	Command::editSuit(suit, false);
+	Command::editBuddies(stringToList(buddy), false);
+	Command::editDiveMaster(stringToList(diveMaster), false);
+	Command::editVisibility(visibility, false);
+	Command::editNotes(notes, false);
+	if (unsaved_changes() || diveChanged)
 		changesNeedSaving();
 }
 
