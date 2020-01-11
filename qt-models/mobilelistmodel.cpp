@@ -379,7 +379,8 @@ void MobileListModel::expand(int row)
 	}
 
 	int first = row + 1;
-	int last = first + source->rowCount(sourceIndex(row, 0)) - 1;
+	int numRow = source->rowCount(sourceIndex(row, 0));
+	int last = first + numRow - 1;
 	if (last < first) {
 		// Amazingly, Qt's model API doesn't properly handle empty ranges!
 		expandedRow = row;
@@ -387,6 +388,8 @@ void MobileListModel::expand(int row)
 	}
 	beginInsertRows(QModelIndex(), first, last);
 	expandedRow = row;
+	if (currentRow >= first)
+		currentRow += numRow;
 	endInsertRows();
 }
 
@@ -436,7 +439,8 @@ void MobileListModel::unexpand()
 	if (expandedRow < 0)
 		return;
 	int first = expandedRow + 1;
-	int last = first + numSubItems() - 1;
+	int numRows = numSubItems();
+	int last = first + numRows - 1;
 	if (last < first) {
 		// Amazingly, Qt's model API doesn't properly handle empty ranges!
 		expandedRow = -1;
@@ -444,7 +448,15 @@ void MobileListModel::unexpand()
 	}
 	beginRemoveRows(QModelIndex(), first, last);
 	expandedRow = -1;
-	currentRow = -1; // We collapsed all visible dives -> there is no visible current dive.
+	// If the current row was inside the expanded list, reset it.
+	// Note: the current row
+	if (currentRow >= 0) {
+		// Treat the current row
+		if (first <= currentRow && last >= currentRow)
+			currentRow = -1; // We collapsed the currently selected dive -> there is no more current dive.
+		else if (currentRow > first)
+			currentRow -= numRows; // The currently selected dive is after the collapsed trip -> adjust row accordingly.
+	}
 	endRemoveRows();
 }
 
