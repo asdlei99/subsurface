@@ -379,7 +379,8 @@ void MobileListModel::expand(int row)
 	}
 
 	int first = row + 1;
-	int numRow = source->rowCount(sourceIndex(row, 0));
+	QModelIndex tripIdx = sourceIndex(row, 0);
+	int numRow = source->rowCount(tripIdx);
 	int last = first + numRow - 1;
 	if (last < first) {
 		// Amazingly, Qt's model API doesn't properly handle empty ranges!
@@ -388,8 +389,20 @@ void MobileListModel::expand(int row)
 	}
 	beginInsertRows(QModelIndex(), first, last);
 	expandedRow = row;
-	if (currentRow >= first)
+	if (currentRow < 0 && current_dive) {
+		// If there is no current row, we have to check whether one of the expanded dives is the current dive
+		// Accessing the source model is very tedious - perhaps just get a pointer to the trip.
+		for (int i = 0; i < numRow; ++i) {
+			QModelIndex idx = source->index(numRow - i - 1, 0, tripIdx);
+			dive *d = source->data(idx, DiveTripModelBase::DIVE_ROLE).value<dive *>();
+			if (d == current_dive) {
+				currentRow = first + i;
+				break;
+			}
+		}
+	} else if (currentRow >= first) {
 		currentRow += numRow;
+	}
 	endInsertRows();
 }
 
