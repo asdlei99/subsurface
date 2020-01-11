@@ -238,15 +238,6 @@ Kirigami.ScrollablePage {
 			}
 		}
 	}
-	contextualActions: [
-		Kirigami.Action {
-			text: qsTr("Undo")
-		},
-		Kirigami.Action {
-			text: qsTr ("Remove dive from trip")
-		}
-	]
-
 	StartPage {
 		id: startPage
 		anchors.fill: parent
