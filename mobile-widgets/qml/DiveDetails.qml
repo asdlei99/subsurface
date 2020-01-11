@@ -193,6 +193,21 @@ Kirigami.Page {
 		}
 	}
 
+	contextualActions: [
+		Kirigami.Action {
+			text: qsTr ("Remove dive from trip <TBD>")
+		},
+		Kirigami.Action {
+			text: qsTr("Add dive to trip above <TBD>")
+		},
+		Kirigami.Action {
+			text: manager.undoText
+			enabled: text !== "Undo"
+			onTriggered: manager.undo()
+		}
+	]
+
+
 	onBackRequested: {
 		if (state === "edit") {
 			endEditMode()
