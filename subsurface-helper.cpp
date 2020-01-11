@@ -14,7 +14,8 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include "mobile-widgets/qmlmanager.h"
-#include "qt-models/divelistmodel.h"
+#include "qt-models/mobilefiltermodel.h"
+#include "qt-models/mobilelistmodel.h"
 #include "qt-models/gpslistmodel.h"
 #include "qt-models/messagehandlermodel.h"
 #include "profile-widget/qmlprofile.h"
@@ -100,10 +101,11 @@ void run_ui()
 	gpsSortModel->setSortRole(GpsListModel::GpsWhenRole);
 	gpsSortModel->sort(0, Qt::DescendingOrder);
 	QQmlContext *ctxt = engine.rootContext();
-	ctxt->setContextProperty("diveModel", DiveListSortModel::instance());
-	ctxt->setContextProperty("diveTripModel", CollapsedDiveListSortModel::instance());
+	MobileFilterModel *mfm = MobileFilterModel::instance();
+	ctxt->setContextProperty("diveModel", mfm);
 	ctxt->setContextProperty("gpsModel", gpsSortModel);
 	ctxt->setContextProperty("vendorList", vendorList);
+	ctxt->setContextProperty("swipeModel", MobileModels::instance()->swipeModel());
 	set_non_bt_addresses();
 
 	ctxt->setContextProperty("connectionListModel", &connectionListModel);

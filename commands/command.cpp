@@ -24,7 +24,7 @@ void deleteDive(const QVector<struct dive*> &divesToDelete)
 	execute(new DeleteDive(divesToDelete));
 }
 
-void shiftTime(const QVector<dive *> &changedDives, int amount)
+void shiftTime(const std::vector<dive *> &changedDives, int amount)
 {
 	execute(new ShiftTime(changedDives, amount));
 }
@@ -143,6 +143,11 @@ void mergeDiveSites(dive_site *ds, const QVector<dive_site *> &sites)
 void purgeUnusedDiveSites()
 {
 	execute(new PurgeUnusedDiveSites);
+}
+
+void applyGPSFixes(const std::vector<DiveAndLocation> &fixes)
+{
+	execute(new ApplyGPSFixes(fixes));
 }
 
 // Execute an edit-command and return number of edited dives

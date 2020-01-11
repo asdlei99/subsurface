@@ -644,14 +644,6 @@ void MainTab::divesEdited(int i)
 	ui.multiDiveWarningMessage->show();
 }
 
-static QStringList stringToList(const QString &s)
-{
-	QStringList res = s.split(",", QString::SkipEmptyParts);
-	for (QString &str: res)
-		str = str.trimmed();
-	return res;
-}
-
 void MainTab::on_buddy_editingFinished()
 {
 	if (editMode == IGNORE_MODE || !current_dive)
@@ -690,18 +682,10 @@ void MainTab::on_depth_editingFinished()
 // all dives are shifted by an offset.
 static void shiftTime(QDateTime &dateTime)
 {
-	QVector<dive *> dives;
-	struct dive *d;
-	int i;
-	for_each_dive (i, d) {
-		if (d->selected)
-			dives.append(d);
-	}
-
 	timestamp_t when = dateTime.toTime_t();
 	if (current_dive && current_dive->when != when) {
 		timestamp_t offset = when - current_dive->when;
-		Command::shiftTime(dives, (int)offset);
+		Command::shiftTime(getDiveSelection(), (int)offset);
 	}
 }
 

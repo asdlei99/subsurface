@@ -65,24 +65,14 @@ Kirigami.ApplicationWindow {
 	}
 
 	function showBusy(msg) {
-		if (msg !== undefined)
+		if (msg !== undefined && msg !== "")
 			showPassiveNotification(msg, 15000) // show for 15 seconds
 		busy.running = true
-	}
-
-	function showBusyAndDisconnectModel() { // this is used by QMLManager when operating the filter
-		busy.running = true
-		diveList.diveListModel = null
 	}
 
 	function hideBusy() {
 		busy.running = false
 		showPassiveNotification("", 10) // this hides a notification messssage that's still shown
-	}
-
-	function hideBusyAndConnectModel() { // this is used by QMLManager when done filtering
-		busy.running = false
-		diveList.diveListModel = diveTripModel
 	}
 
 	function returnTopPage() {
@@ -93,7 +83,7 @@ Kirigami.ApplicationWindow {
 	}
 
 	function scrollToTop() {
-		diveList.scrollToTop()
+		newDiveList.scrollToTop()
 	}
 
 	function showMap() {
@@ -109,9 +99,9 @@ Kirigami.ApplicationWindow {
 	function showDiveList() {
 		if (globalDrawer.drawerOpen)
 			globalDrawer.close()
-		var i=pageIndex(diveList)
+		var i=pageIndex(newDiveList)
 		if (i === -1)
-			pageStack.push(diveList)
+			pageStack.push(newDiveList)
 		else
 			pageStack.currentIndex = i
 	}
@@ -125,39 +115,12 @@ Kirigami.ApplicationWindow {
 	}
 
 	function startAddDive() {
-		detailsWindow.state = "add"
-		detailsWindow.dive_id = manager.addDive();
-		detailsWindow.number = manager.getNumber(detailsWindow.dive_id)
-		detailsWindow.date = manager.getDate(detailsWindow.dive_id)
-		detailsWindow.airtemp = ""
-		detailsWindow.watertemp = ""
-		detailsWindow.buddyModel = manager.buddyList
-		detailsWindow.buddyIndex = -1
-		detailsWindow.buddyText = ""
-		detailsWindow.depth = ""
-		detailsWindow.divemasterModel = manager.divemasterList
-		detailsWindow.divemasterIndex = -1
-		detailsWindow.divemasterText = ""
-		detailsWindow.notes = ""
-		detailsWindow.location = ""
-		detailsWindow.gps = ""
-		detailsWindow.duration = ""
-		detailsWindow.suitModel = manager.suitList
-		detailsWindow.suitIndex = -1
-		detailsWindow.suitText = ""
-		detailsWindow.cylinderModel0 = manager.cylinderInit
-		detailsWindow.cylinderModel1 = manager.cylinderInit
-		detailsWindow.cylinderModel2 = manager.cylinderInit
-		detailsWindow.cylinderModel3 = manager.cylinderInit
-		detailsWindow.cylinderModel4 = manager.cylinderInit
-		detailsWindow.cylinderIndex0 = PrefGeneral.default_cylinder == "" ? -1 : detailsWindow.cylinderModel0.indexOf(PrefGeneral.default_cylinder)
-		detailsWindow.usedCyl = ["",]
-		detailsWindow.weight = ""
-		detailsWindow.usedGas = []
-		detailsWindow.startpressure = []
-		detailsWindow.endpressure = []
-		detailsWindow.gpsCheckbox = false
+		manager.addDive();
 		pageStack.push(detailsWindow)
+	}
+
+	contextDrawer: Kirigami.ContextDrawer {
+		id: cDrawer
 	}
 
 	globalDrawer: Kirigami.GlobalDrawer {
@@ -302,15 +265,15 @@ Kirigami.ApplicationWindow {
 					onTriggered: {
 						globalDrawer.close()
 						showBusy()
-						diveList.diveListModel = null
+						newDiveList.diveListModel = null
 						manager.applyGpsData()
 						diveModel.resetInternalData()
 						manager.refreshDiveList()
 						while (pageStack.depth > 1) {
 							pageStack.pop()
 						}
-						diveList.diveListModel = diveModel
-						pageStack.push(diveList)
+						newDiveList.diveListModel = newDiveModel
+						showDiveList()
 						hideBusy()
 					}
 				}
@@ -845,8 +808,8 @@ if you have network connectivity and want to sync your data to cloud storage."),
 		}
 	}
 
-	DiveList {
-		id: diveList
+	NewDiveList {
+		id: newDiveList
 		visible: false
 	}
 
@@ -941,7 +904,7 @@ if you have network connectivity and want to sync your data to cloud storage."),
 		if (Screen.manufacturer + " " + Screen.model + " " + Screen.name !== "  ")
 			manager.appendTextToLog("Running on " + Screen.manufacturer + " " + Screen.model + " " + Screen.name)
 		rootItem.visible = true
-		diveList.opacity = 1
+		newDiveList.opacity = 1
 		rootItem.opacity = 1
 		manager.appendTextToLog("setting the defaultColumnWidth to " + Kirigami.Units.gridUnit * 21)
 		pageStack.defaultColumnWidth = Kirigami.Units.gridUnit * 21

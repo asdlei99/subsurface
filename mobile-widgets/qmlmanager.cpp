@@ -19,12 +19,14 @@
 
 #include <QBluetoothLocalDevice>
 
-#include "qt-models/divelistmodel.h"
 #include "qt-models/gpslistmodel.h"
 #include "qt-models/completionmodels.h"
 #include "qt-models/messagehandlermodel.h"
 #include "qt-models/tankinfomodel.h"
+#include "qt-models/mobilelistmodel.h"
+#include "qt-models/mobilefiltermodel.h"
 #include "core/device.h"
+#include "core/divefilter.h"
 #include "core/errorhelper.h"
 #include "core/file.h"
 #include "core/qthelper.h"
@@ -43,12 +45,13 @@
 #include "core/settings/qPrefTechnicalDetails.h"
 #include "core/settings/qPrefPartialPressureGas.h"
 #include "core/settings/qPrefUnit.h"
+#include "core/subsurface-qt/DiveObjectHelper.h"
 #include "core/trip.h"
 #include "backend-shared/exportfuncs.h"
 #include "core/worldmap-save.h"
 #include "core/uploadDiveLogsDE.h"
 #include "core/uploadDiveShare.h"
-
+#include "commands/command.h"
 
 QMLManager *QMLManager::m_instance = NULL;
 bool noCloudToCloud = false;
@@ -146,15 +149,12 @@ void QMLManager::btRescan()
 }
 
 QMLManager::QMLManager() : m_locationServiceEnabled(false),
-        m_verboseEnabled(false),
-        deletedDive(0),
-        deletedTrip(0),
-        m_updateSelectedDive(-1),
-        m_selectedDiveTimestamp(0),
-        alreadySaving(false),
-        m_pluggedInDeviceName(""),
-        m_showNonDiveComputers(false),
-        m_oldStatus(qPrefCloudStorage::CS_UNKNOWN)
+	m_verboseEnabled(false),
+	alreadySaving(false),
+	m_pluggedInDeviceName(""),
+	m_showNonDiveComputers(false),
+	undoAction(Command::undoAction(this)),
+	m_oldStatus(qPrefCloudStorage::CS_UNKNOWN)
 {
 	m_instance = this;
 	m_lastDevicePixelRatio = qApp->devicePixelRatio();
@@ -292,8 +292,7 @@ void QMLManager::applicationStateChanged(Qt::ApplicationState state)
 
 void QMLManager::openLocalThenRemote(QString url)
 {
-	CollapsedDiveListSortModel::instance()->setSourceModel(nullptr);
-	DiveListModel::instance()->clear();
+	MobileModels::instance()->clear();
 	setNotificationText(tr("Open local dive data file"));
 	QByteArray fileNamePrt = QFile::encodeName(url);
 	/* if this is a cloud storage repo and we have no local cache (i.e., it's the first time
@@ -333,9 +332,7 @@ void QMLManager::openLocalThenRemote(QString url)
 		qPrefTechnicalDetails::set_show_ccr_sensors(git_prefs.show_ccr_sensors);
 		qPrefPartialPressureGas::set_po2(git_prefs.pp_graphs.po2);
 		process_loaded_dives();
-		DiveListModel::instance()->reload();
-		CollapsedDiveListSortModel::instance()->setSourceModel(DiveListModel::instance());
-		CollapsedDiveListSortModel::instance()->updateFilterState();
+		MobileModels::instance()->reset();
 		appendTextToLog(QStringLiteral("%1 dives loaded from cache").arg(dive_table.nr));
 		setNotificationText(tr("%1 dives loaded from local dive data file").arg(dive_table.nr));
 	}
@@ -360,6 +357,30 @@ void QMLManager::openLocalThenRemote(QString url)
 		tryRetrieveDataFromBackend();
 	}
 	updateAllGlobalLists();
+}
+
+// Should we provide that function as courtesy directly in the model?
+static struct dive *diveInRow(const QAbstractItemModel *model, int row)
+{
+	QModelIndex index = model->index(row, 0, QModelIndex());
+	return index.isValid() ?  model->data(index, DiveTripModelBase::DIVE_ROLE).value<struct dive *>() : nullptr;
+}
+
+void QMLManager::toggle(int row)
+{
+	MobileFilterModel::instance()->toggle(row);
+}
+
+void QMLManager::selectRow(int row)
+{
+	dive *d = diveInRow(MobileFilterModel::instance(), row);
+	select_single_dive(d);
+}
+
+void QMLManager::selectSwipeRow(int row)
+{
+	dive *d = diveInRow(MobileModels::instance()->swipeModel(), row);
+	select_single_dive(d);
 }
 
 void QMLManager::updateSiteList()
@@ -467,7 +488,7 @@ void QMLManager::finishSetup()
 			set_filename(NULL);
 		} else {
 			// successfully opened the local file, now add thigs to the dive list
-			consumeFinishedLoad(0);
+			consumeFinishedLoad();
 			appendTextToLog(QString("working in no-cloud mode, finished loading %1 dives from %2").arg(dive_table.nr).arg(existing_filename));
 		}
 	} else {
@@ -554,7 +575,7 @@ void QMLManager::saveCloudCredentials(const QString &newEmail, const QString &ne
 		getCloudURL(url);
 		manager()->clearAccessCache(); // remove any chached credentials
 		clear_git_id(); // invalidate our remembered GIT SHA
-		DiveListModel::instance()->reload();
+		MobileModels::instance()->clear();
 		GpsListModel::instance()->clear();
 		setStartPageText(tr("Attempting to open cloud storage with new credentials"));
 		// we therefore know that no one else is already accessing THIS git repo;
@@ -723,7 +744,6 @@ void QMLManager::retrieveUserid()
 void QMLManager::loadDivesWithValidCredentials()
 {
 	QString url;
-	timestamp_t currentDiveTimestamp = m_selectedDiveTimestamp;
 	if (getCloudURL(url)) {
 		setStartPageText(RED_FONT + tr("Cloud storage error: %1").arg(consumeError()) + END_FONT);
 		revertToNoCloudIfNeeded();
@@ -742,7 +762,7 @@ void QMLManager::loadDivesWithValidCredentials()
 	// if we aren't switching from no-cloud mode, let's clear the dive data
 	if (!noCloudToCloud) {
 		appendTextToLog("Clear out in memory dive data");
-		DiveListModel::instance()->clear();
+		MobileModels::instance()->clear();
 	} else {
 		appendTextToLog("Switching from no cloud mode; keep in memory dive data");
 	}
@@ -763,7 +783,7 @@ void QMLManager::loadDivesWithValidCredentials()
 		set_filename(NULL);
 		return;
 	}
-	consumeFinishedLoad(currentDiveTimestamp);
+	consumeFinishedLoad();
 
 successful_exit:
 	alreadySaving = false;
@@ -773,7 +793,7 @@ successful_exit:
 	if (noCloudToCloud) {
 		git_storage_update_progress(qPrintable(tr("Loading dives from local storage ('no cloud' mode)")));
 		mergeLocalRepo();
-		DiveListModel::instance()->reload();
+		MobileModels::instance()->reset();
 		appendTextToLog(QStringLiteral("%1 dives loaded after importing nocloud local storage").arg(dive_table.nr));
 		noCloudToCloud = false;
 		mark_divelist_changed(true);
@@ -822,7 +842,7 @@ void QMLManager::revertToNoCloudIfNeeded()
 	alreadySaving = false;
 }
 
-void QMLManager::consumeFinishedLoad(timestamp_t currentDiveTimestamp)
+void QMLManager::consumeFinishedLoad()
 {
 	prefs.unit_system = git_prefs.unit_system;
 	if (git_prefs.unit_system == IMPERIAL)
@@ -836,9 +856,7 @@ void QMLManager::consumeFinishedLoad(timestamp_t currentDiveTimestamp)
 	prefs.show_ccr_sensors = git_prefs.show_ccr_sensors;
 	prefs.pp_graphs.po2 = git_prefs.pp_graphs.po2;
 	process_loaded_dives();
-	DiveListModel::instance()->reload();
-	if (currentDiveTimestamp)
-		setUpdateSelectedDive(DiveListSortModel::instance()->getIdxForId(get_dive_id_closest_to(currentDiveTimestamp)));
+	MobileModels::instance()->reset();
 	appendTextToLog(QStringLiteral("%1 dives loaded").arg(dive_table.nr));
 	if (dive_table.nr == 0)
 		setStartPageText(tr("Cloud storage open successfully. No dives in dive list."));
@@ -847,20 +865,7 @@ void QMLManager::consumeFinishedLoad(timestamp_t currentDiveTimestamp)
 
 void QMLManager::refreshDiveList()
 {
-	DiveListModel::instance()->reload();
-}
-
-void QMLManager::setupDivesite(struct dive *d, struct dive_site *ds, double lat, double lon, const char *locationtext)
-{
-	location_t location = create_location(lat, lon);
-	if (ds) {
-		ds->location = location;
-	} else {
-		unregister_dive_from_dive_site(d);
-		add_dive_to_dive_site(d, create_dive_site_with_gps(locationtext, &location, &dive_site_table));
-		// We created a new dive site - let the dive site model know.
-		updateSiteList();
-	}
+	MobileModels::instance()->reset();
 }
 
 bool QMLManager::checkDate(const DiveObjectHelper &myDive, struct dive * d, QString date)
@@ -968,48 +973,61 @@ parsed:
 	return false;
 }
 
+// Get location from GPS string. Attention: if we determine the current GPS location,
+// the input string is overwritten!
+location_t QMLManager::getGps(QString &gps)
+{
+	double lat, lon;
+	if (parseGpsText(gps, &lat, &lon)) {
+		qDebug() << "parsed GPS, using it";
+		return create_location(lat, lon);
+	} else if (gps == GPS_CURRENT_POS) {
+		QString gpsString = getCurrentPosition();
+		if (gpsString != GPS_CURRENT_POS) {
+			qDebug() << "but now I got a valid location" << gpsString;
+			if (parseGpsText(qPrintable(gpsString), &lat, &lon)) {
+				gps = gpsString; // Overwrite input string!
+				return create_location(lat, lon);
+			}
+			appendTextToLog(QString("wasn't able to parse determined gps string '%1'").arg(gpsString));
+		} else {
+			appendTextToLog("couldn't get GPS location in time");
+		}
+	} else {
+		// just something we can't parse, so tell the user
+		appendTextToLog(QString("wasn't able to parse gps string '%1'").arg(gps));
+	}
+	return location_t { {0}, {0} }; // Invalid location
+}
+
 bool QMLManager::checkLocation(const DiveObjectHelper &myDive, struct dive *d, QString location, QString gps)
 {
 	bool diveChanged = false;
-	struct dive_site *ds = get_dive_site_for_dive(d);
 	qDebug() << "checkLocation" << location << "gps" << gps << "dive had" << myDive.location << "gps" << myDive.gas;
+
+
 	if (myDive.location != location) {
 		diveChanged = true;
-		ds = get_dive_site_by_name(qPrintable(location), &dive_site_table);
-		if (!ds && !location.isEmpty())
-			ds = create_dive_site(qPrintable(location), &dive_site_table);
-		unregister_dive_from_dive_site(d);
-		add_dive_to_dive_site(d, ds);
-		// We created a new dive site - let the dive site model know.
-		updateSiteList();
+		dive_site *ds = get_dive_site_by_name(qPrintable(location), &dive_site_table);
+		if (ds) {
+			// This is a known dive site
+			diveChanged |= Command::editDiveSite(ds, false) > 0;
+		} else if (!location.isEmpty()) {
+			// This is a new dive site with a name
+			diveChanged |= Command::editDiveSiteNew(location, false) > 0;
+		} else {
+			// If the user provided a gps location but no name, create a dive site with that GPS location.
+			// Note that getGps overwrites the string-parameter if we determine the current GPS location.
+			diveChanged |= Command::editDiveSiteNew(gps, false) > 0;
+		}
 	}
+
 	// now make sure that the GPS coordinates match - if the user changed the name but not
 	// the GPS coordinates, this still does the right thing as the now new dive site will
 	// have no coordinates, so the coordinates from the edit screen will get added
-	if (myDive.gps != gps) {
-		double lat, lon;
-		if (parseGpsText(gps, &lat, &lon)) {
-			qDebug() << "parsed GPS, using it";
-			// there are valid GPS coordinates - just use them
-			setupDivesite(d, ds, lat, lon, qPrintable(myDive.location));
-			diveChanged = true;
-		} else if (gps == GPS_CURRENT_POS) {
-			qDebug() << "gps was our default text for no GPS";
-			// user asked to use current pos
-			QString gpsString = getCurrentPosition();
-			if (gpsString != GPS_CURRENT_POS) {
-				qDebug() << "but now I got a valid location" << gpsString;
-				if (parseGpsText(qPrintable(gpsString), &lat, &lon)) {
-					setupDivesite(d, ds, lat, lon, qPrintable(myDive.location));
-					diveChanged = true;
-				}
-			} else {
-				appendTextToLog("couldn't get GPS location in time");
-			}
-		} else {
-			// just something we can't parse, so tell the user
-			appendTextToLog(QString("wasn't able to parse gps string '%1'").arg(gps));
-		}
+	if (d->dive_site) {
+		location_t location = getGps(gps);
+		Command::editDiveSiteLocation(d->dive_site, location);
 	}
 	return diveChanged;
 }
@@ -1017,6 +1035,10 @@ bool QMLManager::checkLocation(const DiveObjectHelper &myDive, struct dive *d, Q
 bool QMLManager::checkDuration(const DiveObjectHelper &myDive, struct dive *d, QString duration)
 {
 	if (myDive.duration != duration) {
+		if (!same_string(d->dc.model, "manually added dive")) {
+			appendTextToLog("Cannot change the duration on a dive that wasn't manually added");
+			return false;
+		}
 		int h = 0, m = 0, s = 0;
 		QRegExp r1(QStringLiteral("(\\d*)\\s*%1[\\s,:]*(\\d*)\\s*%2[\\s,:]*(\\d*)\\s*%3").arg(tr("h")).arg(tr("min")).arg(tr("sec")), Qt::CaseInsensitive);
 		QRegExp r2(QStringLiteral("(\\d*)\\s*%1[\\s,:]*(\\d*)\\s*%2").arg(tr("h")).arg(tr("min")), Qt::CaseInsensitive);
@@ -1043,12 +1065,7 @@ bool QMLManager::checkDuration(const DiveObjectHelper &myDive, struct dive *d, Q
 		} else if (r6.indexIn(duration) >= 0) {
 			m = r6.cap(1).toInt();
 		}
-		d->dc.duration.seconds = d->duration.seconds = h * 3600 + m * 60 + s;
-		if (same_string(d->dc.model, "manually added dive"))
-			free_samples(&d->dc);
-		else
-			appendTextToLog("Cannot change the duration on a dive that wasn't manually added");
-		return true;
+		return Command::editDuration(h * 3600 + m * 60 + s, true);
 	}
 	return false;
 }
@@ -1060,14 +1077,8 @@ bool QMLManager::checkDepth(const DiveObjectHelper &myDive, dive *d, QString dep
 		// the QML code should stop negative depth, but massively huge depth can make
 		// the profile extremely slow or even run out of memory and crash, so keep
 		// the depth <= 500m
-		if (0 <= depthValue && depthValue <= 500000) {
-			d->maxdepth.mm = depthValue;
-			if (same_string(d->dc.model, "manually added dive")) {
-				d->dc.maxdepth.mm = d->maxdepth.mm;
-				free_samples(&d->dc);
-			}
-			return true;
-		}
+		if (0 <= depthValue && depthValue <= 500000)
+			return Command::editDepth(depthValue, true);
 	}
 	return false;
 }
@@ -1092,28 +1103,16 @@ void QMLManager::commitChanges(QString diveId, QString number, QString date, QSt
 	notes = doc.toPlainText();
 
 	bool diveChanged = false;
-	bool needResort = false;
 
-	diveChanged = needResort = checkDate(myDive, d, date);
+	checkDate(myDive, d, date);
+	checkLocation(myDive, d, location, gps);
+	checkDuration(myDive, d, duration);
+	checkDepth(myDive, d, depth);
+	Command::editNumber(number.toInt(), true);
+	Command::editAirTemp(parseTemperatureToMkelvin(airtemp), false);
+	Command::editWaterTemp(parseTemperatureToMkelvin(watertemp), false);
 
-	diveChanged |= checkLocation(myDive, d, location, gps);
-
-	diveChanged |= checkDuration(myDive, d, duration);
-
-	diveChanged |= checkDepth(myDive, d, depth);
-
-	if (QString::number(myDive.number) != number) {
-		diveChanged = true;
-		d->number = number.toInt();
-	}
-	if (myDive.airTemp != airtemp) {
-		diveChanged = true;
-		d->airtemp.mkelvin = parseTemperatureToMkelvin(airtemp);
-	}
-	if (myDive.waterTemp != watertemp) {
-		diveChanged = true;
-		d->watertemp.mkelvin = parseTemperatureToMkelvin(watertemp);
-	}
+	// TODO: Undo for weight-system not yet implemented
 	if (myDive.sumWeight != weight) {
 		diveChanged = true;
 		// not sure what we'd do if there was more than one weight system
@@ -1125,6 +1124,7 @@ void QMLManager::commitChanges(QString diveId, QString number, QString date, QSt
 			d->weightsystems.weightsystems[0].weight.grams = parseWeightToGrams(weight);
 		}
 	}
+	// TODO: Undo for cylinder not yet implemented
 	// start and end pressures for first cylinder only
 	if (myDive.startPressure != startpressure || myDive.endPressure != endpressure) {
 		diveChanged = true;
@@ -1186,76 +1186,12 @@ void QMLManager::commitChanges(QString diveId, QString number, QString date, QSt
 			k++;
 		}
 	}
-	if (myDive.suit != suit) {
-		diveChanged = true;
-		free(d->suit);
-		d->suit = copy_qstring(suit);
-	}
-	if (myDive.buddy != buddy) {
-		if (buddy.contains(",")){
-			buddy = buddy.replace(QRegExp("\\s*,\\s*"), ", ");
-		}
-		diveChanged = true;
-		free(d->buddy);
-		d->buddy = copy_qstring(buddy);
-	}
-	if (myDive.divemaster != diveMaster) {
-		if (diveMaster.contains(",")){
-			diveMaster = diveMaster.replace(QRegExp("\\s*,\\s*"), ", ");
-		}
-		diveChanged = true;
-		free(d->divemaster);
-		d->divemaster = copy_qstring(diveMaster);
-	}
-	if (myDive.rating != rating) {
-		diveChanged = true;
-		d->rating = rating;
-	}
-	if (myDive.visibility != visibility) {
-		diveChanged = true;
-		d->visibility = visibility;
-	}
-	if (myDive.notes != notes) {
-		diveChanged = true;
-		free(d->notes);
-		d->notes = copy_qstring(notes);
-	}
-	// now that we have it all figured out, let's see what we need
-	// to update
-	DiveListModel *dm = DiveListModel::instance();
-	int modelIdx = dm->getDiveIdx(d->id);
-	int oldIdx = get_idx_by_uniq_id(d->id);
-	if (needResort) {
-		// we know that the only thing that might happen in a resort is that
-		// this one dive moves to a different spot in the dive list
-		sort_dive_table(&dive_table);
-		sort_trip_table(&trip_table);
-		int newIdx = get_idx_by_uniq_id(d->id);
-		if (newIdx != oldIdx) {
-			DiveListModel::instance()->removeDive(modelIdx);
-			modelIdx += (newIdx - oldIdx);
-			DiveListModel::instance()->insertDive(modelIdx);
-			diveChanged = true; // because we already modified things
-		}
-	}
-	if (diveChanged) {
-		if (d->maxdepth.mm == d->dc.maxdepth.mm &&
-		    d->maxdepth.mm > 0 &&
-		    same_string(d->dc.model, "manually added dive") &&
-		    d->dc.samples == 0) {
-			// so we have depth > 0, a manually added dive and no samples
-			// let's create an actual profile so the desktop version can work it
-			// first clear out the mean depth (or the fake_dc() function tries
-			// to be too clever)
-			d->meandepth.mm = d->dc.meandepth.mm = 0;
-			fake_dc(&d->dc);
-		}
-		fixup_dive(d);
-		DiveListModel::instance()->updateDive(modelIdx, d);
-		invalidate_dive_cache(d);
-		mark_divelist_changed(true);
-	}
-	if (diveChanged || needResort)
+	Command::editSuit(suit, false);
+	Command::editBuddies(stringToList(buddy), false);
+	Command::editDiveMaster(stringToList(diveMaster), false);
+	Command::editVisibility(visibility, false);
+	Command::editNotes(notes, false);
+	if (unsaved_changes() || diveChanged)
 		changesNeedSaving();
 }
 
@@ -1372,25 +1308,10 @@ void QMLManager::saveChangesCloud(bool forceRemoteSync)
 	git_local_only = glo;
 }
 
-bool QMLManager::undoDelete(int id)
+void QMLManager::undoDelete(int)
 {
-	if (!deletedDive || deletedDive->id != id) {
-		appendTextToLog("Trying to undo delete but can't find the deleted dive");
-		return false;
-	}
-	if (deletedTrip)
-		insert_trip(deletedTrip, &trip_table);
-	if (deletedDive->divetrip) {
-		struct dive_trip *trip = deletedDive->divetrip;
-		deletedDive->divetrip = NULL;
-		add_dive_to_trip(deletedDive, trip);
-	}
-	record_dive(deletedDive);
-	DiveListModel::instance()->insertDive(get_idx_by_uniq_id(deletedDive->id));
+	undoAction->activate(QAction::Trigger);
 	changesNeedSaving();
-	deletedDive = NULL;
-	deletedTrip = NULL;
-	return true;
 }
 
 void QMLManager::selectDive(int id)
@@ -1407,8 +1328,6 @@ void QMLManager::selectDive(int id)
 	}
 	if (amount_selected == 0)
 		qWarning("QManager::selectDive() called with unknown id");
-	else
-		CollapsedDiveListSortModel::instance()->updateSelectionState();
 }
 
 void QMLManager::deleteDive(int id)
@@ -1418,28 +1337,7 @@ void QMLManager::deleteDive(int id)
 		appendTextToLog("trying to delete non-existing dive");
 		return;
 	}
-	// create the storage for the deleted dive and trip (if applicable)
-	if (!deletedDive)
-		deletedDive = alloc_dive();
-	copy_dive(d, deletedDive);
-	if (!deletedTrip) {
-		deletedTrip = alloc_trip();
-	} else {
-		free(deletedTrip->location);
-		free(deletedTrip->notes);
-		memset(deletedTrip, 0, sizeof(struct dive_trip));
-	}
-	// if this is the last dive in that trip, remember the trip as well
-	if (d->divetrip && d->divetrip->dives.nr == 1) {
-		*deletedTrip = *d->divetrip;
-		deletedTrip->location = copy_string(d->divetrip->location);
-		deletedTrip->notes = copy_string(d->divetrip->notes);
-		deletedTrip->dives.nr = 0;
-		deletedDive->divetrip = deletedTrip;
-	}
-	DiveListModel::instance()->removeDiveById(id);
-	delete_single_dive(get_idx_by_uniq_id(id));
-	DiveListModel::instance()->resetInternalData();
+	Command::deleteDive(QVector<dive *>{ d });
 	changesNeedSaving();
 }
 
@@ -1536,24 +1434,11 @@ void QMLManager::copyDiveData(int id)
 
 void QMLManager::pasteDiveData(int id)
 {
-	struct dive *d = get_dive_by_uniq_id(id);
-	if (!d) {
-		appendTextToLog("trying to paste to non-existing dive");
-		return;
-	}
 	if (!m_copyPasteDive) {
 		appendTextToLog("dive to paste is not selected");
 		return;
 	}
-	selective_copy_dive(m_copyPasteDive, d, what, false);
-
-	invalidate_dive_cache(d);
-	mark_divelist_changed(true);
-	changesNeedSaving();
-	setNotificationText("Paste");
-
-	int modelIdx = DiveListModel::instance()->getDiveIdx(id);
-	DiveListModel::instance()->updateDive(modelIdx, d);
+	Command::pasteDives(m_copyPasteDive, what);
 }
 
 void QMLManager::cancelDownloadDC()
@@ -1561,16 +1446,24 @@ void QMLManager::cancelDownloadDC()
 	import_thread_cancelled = true;
 }
 
-QString QMLManager::addDive()
+void QMLManager::addDive()
 {
 	appendTextToLog("Adding new dive.");
-	return DiveListModel::instance()->startAddDive();
-}
 
-void QMLManager::addDiveAborted(int id)
-{
-	DiveListModel::instance()->removeDiveById(id);
-	delete_single_dive(get_idx_by_uniq_id(id));
+	// TODO: Duplicate code with desktop-widgets/mainwindow.cpp
+	// create a dive an hour from now with a default depth (15m/45ft) and duration (40 minutes)
+	// as a starting point for the user to edit
+	struct dive d = { 0 };
+	d.id = dive_getUniqID();
+	d.when = QDateTime::currentMSecsSinceEpoch() / 1000L + gettimezoneoffset() + 3600;
+	d.dc.duration.seconds = 40 * 60;
+	d.dc.maxdepth.mm = M_OR_FT(15, 45);
+	d.dc.meandepth.mm = M_OR_FT(13, 39); // this creates a resonable looking safety stop
+	d.dc.model = strdup("manually added dive"); // don't translate! this is stored in the XML file
+	fake_dc(&d.dc);
+	fixup_dive(&d);
+
+	Command::addDive(&d, autogroup, true);
 }
 
 QString QMLManager::getCurrentPosition()
@@ -1594,11 +1487,9 @@ QString QMLManager::getCurrentPosition()
 void QMLManager::applyGpsData()
 {
 	appendTextToLog("Applying GPS fiexs");
-	int cnt = locationProvider->applyLocations();
-	if (cnt == 0)
-		return;
-	appendTextToLog(QString("Attached %1 GPS fixes").arg(cnt));
-	refreshDiveList();
+	std::vector<DiveAndLocation> fixes = locationProvider->getLocations();
+	Command::applyGPSFixes(fixes);
+	appendTextToLog(QString("Attached %1 GPS fixes").arg(fixes.size()));
 }
 
 void QMLManager::populateGpsData()
@@ -1728,18 +1619,6 @@ void QMLManager::setNotificationText(QString text)
 {
 	m_notificationText = text;
 	emit notificationTextChanged();
-}
-
-void QMLManager::setUpdateSelectedDive(int idx)
-{
-	m_updateSelectedDive = idx;
-	emit updateSelectedDiveChanged();
-}
-
-void QMLManager::setSelectedDiveTimestamp(int when)
-{
-	m_selectedDiveTimestamp = when;
-	emit selectedDiveTimestampChanged();
 }
 
 qreal QMLManager::lastDevicePixelRatio()
@@ -2093,13 +1972,12 @@ void QMLManager::showDownloadPage(QString deviceString)
 void QMLManager::setFilter(const QString filterText)
 {
 	// show that we are doing something, then do something in another thread in order not to block the UI
-	QMetaObject::invokeMethod(qmlWindow, "showBusyAndDisconnectModel");
+	QMetaObject::invokeMethod(qmlWindow, "showBusy", Q_ARG(QVariant, QVariant::fromValue(QString())));
 	QtConcurrent::run(QThreadPool::globalInstance(),
-	                  [=]{
-		                DiveListSortModel::instance()->setFilter(filterText);
-				CollapsedDiveListSortModel::instance()->updateFilterState();
-				QMetaObject::invokeMethod(qmlWindow, "hideBusyAndConnectModel");
-	                  });
+			  [=]{
+				DiveFilter::instance()->setFilter(filterText);
+				QMetaObject::invokeMethod(qmlWindow, "hideBusy");
+			  });
 }
 
 void QMLManager::setShowNonDiveComputers(bool show)

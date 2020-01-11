@@ -28,7 +28,7 @@ GpsLocation::GpsLocation(void (*showMsgCB)(const char *), QObject *parent) :
 	showMessageCB = showMsgCB;
 	// create a QSettings object that's separate from the main application settings
 	geoSettings = new QSettings(QSettings::NativeFormat, QSettings::UserScope,
-				    QString("org.subsurfacedivelog"), QString("subsurfacelocation"), this);
+				    QStringLiteral("org.subsurfacedivelog"), QStringLiteral("subsurfacelocation"), this);
 	userAgent = getUserAgent();
 	(void)getGpsSource();
 	loadFromStorage();
@@ -58,7 +58,7 @@ void GpsLocation::setGpsTimeThreshold(int seconds)
 {
 	if (m_GpsSource) {
 		m_GpsSource->setUpdateInterval(seconds * 1000);
-		status(QString("Set GPS service update interval to %1 s").arg(m_GpsSource->updateInterval() / 1000));
+		status(QStringLiteral("Set GPS service update interval to %1 s").arg(m_GpsSource->updateInterval() / 1000));
 	}
 }
 
@@ -88,7 +88,7 @@ QGeoPositionInfoSource *GpsLocation::getGpsSource()
 #ifndef SUBSURFACE_MOBILE
 			if (verbose)
 #endif
-				status(QString("Created position source %1").arg(m_GpsSource->sourceName()));
+				status(QStringLiteral("Created position source %1").arg(m_GpsSource->sourceName()));
 			connect(m_GpsSource, SIGNAL(positionUpdated(QGeoPositionInfo)), this, SLOT(newPosition(QGeoPositionInfo)));
 			connect(m_GpsSource, SIGNAL(updateTimeout()), this, SLOT(updateTimeout()));
 			connect(m_GpsSource, SIGNAL(error(QGeoPositionInfoSource::Error)), this, SLOT(positionSourceError(QGeoPositionInfoSource::Error)));
@@ -120,7 +120,7 @@ void GpsLocation::serviceEnable(bool toggle)
 	}
 	if (toggle) {
 		gpsSource->startUpdates();
-		status(QString("Starting Subsurface GPS service with update interval %1").arg(gpsSource->updateInterval()));
+		status(QStringLiteral("Starting Subsurface GPS service with update interval %1").arg(gpsSource->updateInterval()));
 	} else {
 		gpsSource->stopUpdates();
 		status("Stopping Subsurface GPS service");
@@ -172,7 +172,7 @@ void GpsLocation::newPosition(QGeoPositionInfo pos)
 	int64_t delta = (int64_t)pos.timestamp().toTime_t() + gettimezoneoffset() - lastTime;
 	if (!nr || waitingForPosition || delta > prefs.time_threshold ||
 	    lastCoord.distanceTo(pos.coordinate()) > prefs.distance_threshold) {
-		QString msg("received new position %1 after delta %2 threshold %3 (now %4 last %5)");
+		QString msg = QStringLiteral("received new position %1 after delta %2 threshold %3 (now %4 last %5)");
 		status(qPrintable(msg.arg(pos.coordinate().toString()).arg(delta).arg(prefs.time_threshold).arg(pos.timestamp().toString()).arg(QDateTime().fromMSecsSinceEpoch(lastTime * 1000).toString())));
 		waitingForPosition = false;
 		acquiredPosition();
@@ -211,32 +211,21 @@ int GpsLocation::getGpsNum() const
 	return m_trackers.count();
 }
 
-static void copy_gps_location(struct gpsTracker &gps, struct dive *d)
-{
-	struct dive_site *ds = d->dive_site;
-	if (!ds) {
-		ds = create_dive_site(qPrintable(gps.name), &dive_site_table);
-		add_dive_to_dive_site(d, ds);
-	}
-	ds->location = gps.location;
-}
-
 #define SAME_GROUP 6 * 3600 /* six hours */
-#define SET_LOCATION(_dive, _gpsfix, _mark)	\
-{						\
-	copy_gps_location(_gpsfix, _dive);	\
-	changed++;				\
-	last = _mark;				\
+#define ADD_LOCATION(_dive, _gpsfix, _mark)				\
+{									\
+	fixes.push_back( { _dive, _gpsfix.location, _gpsfix.name } );	\
+	last = _mark;							\
 }
 
-int GpsLocation::applyLocations()
+std::vector<DiveAndLocation> GpsLocation::getLocations()
 {
 	int i;
-	int changed = 0;
 	int last = 0;
 	int cnt = m_trackers.count();
+	std::vector<DiveAndLocation> fixes;
 	if (cnt == 0)
-		return false;
+		return fixes;
 
 	// create a table with the GPS information
 	QList<struct gpsTracker> gpsTable = m_trackers.values();
@@ -260,7 +249,7 @@ int GpsLocation::applyLocations()
 				if (time_during_dive_with_offset(d, gpsTable[j].when, 0)) {
 					if (verbose)
 						qDebug() << "gpsFix is during the dive, pick that one";
-					SET_LOCATION(d, gpsTable[j], j);
+					ADD_LOCATION(d, gpsTable[j], j);
 					break;
 				} else {
 					/*
@@ -279,19 +268,19 @@ int GpsLocation::applyLocations()
 						} else if (gpsTable[j].when > dive_endtime(d)) {
 							if (verbose)
 								qDebug() << "which is even later after the end of the dive, so pick the previous one";
-							SET_LOCATION(d, gpsTable[j], j);
+							ADD_LOCATION(d, gpsTable[j], j);
 							break;
 						} else {
 							/* ok, gpsFix is before, nextgpsFix is after */
 							if (d->when - gpsTable[j].when <= gpsTable[j+1].when - dive_endtime(d)) {
 								if (verbose)
 									qDebug() << "pick the one before as it's closer to the start";
-								SET_LOCATION(d, gpsTable[j], j);
+								ADD_LOCATION(d, gpsTable[j], j);
 								break;
 							} else {
 								if (verbose)
 									qDebug() << "pick the one after as it's closer to the start";
-								SET_LOCATION(d, gpsTable[j + 1], j + 1);
+								ADD_LOCATION(d, gpsTable[j + 1], j + 1);
 								break;
 							}
 						}
@@ -301,7 +290,7 @@ int GpsLocation::applyLocations()
 					} else {
 						if (verbose)
 							qDebug() << "which seems to be the best one for this dive, so pick it";
-						SET_LOCATION(d, gpsTable[j], j);
+						ADD_LOCATION(d, gpsTable[j], j);
 						break;
 					}
 				}
@@ -317,9 +306,8 @@ int GpsLocation::applyLocations()
 
 		}
 	}
-	if (changed > 0)
-		mark_divelist_changed(true);
-	return changed;
+
+	return fixes;
 }
 
 QMap<qint64, gpsTracker> GpsLocation::currentGPSInfo() const
@@ -329,13 +317,13 @@ QMap<qint64, gpsTracker> GpsLocation::currentGPSInfo() const
 
 void GpsLocation::loadFromStorage()
 {
-	int nr = geoSettings->value(QString("count")).toInt();
+	int nr = geoSettings->value(QStringLiteral("count")).toInt();
 	for (int i = 0; i < nr; i++) {
 		struct gpsTracker gt;
-		gt.when = geoSettings->value(QString("gpsFix%1_time").arg(i)).toLongLong();
-		gt.location.lat.udeg = geoSettings->value(QString("gpsFix%1_lat").arg(i)).toInt();
-		gt.location.lon.udeg = geoSettings->value(QString("gpsFix%1_lon").arg(i)).toInt();
-		gt.name = geoSettings->value(QString("gpsFix%1_name").arg(i)).toString();
+		gt.when = geoSettings->value(QStringLiteral("gpsFix%1_time").arg(i)).toLongLong();
+		gt.location.lat.udeg = geoSettings->value(QStringLiteral("gpsFix%1_lat").arg(i)).toInt();
+		gt.location.lon.udeg = geoSettings->value(QStringLiteral("gpsFix%1_lon").arg(i)).toInt();
+		gt.name = geoSettings->value(QStringLiteral("gpsFix%1_name").arg(i)).toString();
 		gt.idx = i;
 		m_trackers.insert(gt.when, gt);
 	}
@@ -348,10 +336,10 @@ void GpsLocation::replaceFixToStorage(gpsTracker &gt)
 		return;
 	}
 	gpsTracker replacedTracker = m_trackers.value(gt.when);
-	geoSettings->setValue(QString("gpsFix%1_time").arg(replacedTracker.idx), gt.when);
-	geoSettings->setValue(QString("gpsFix%1_lat").arg(replacedTracker.idx), gt.location.lat.udeg);
-	geoSettings->setValue(QString("gpsFix%1_lon").arg(replacedTracker.idx), gt.location.lon.udeg);
-	geoSettings->setValue(QString("gpsFix%1_name").arg(replacedTracker.idx), gt.name);
+	geoSettings->setValue(QStringLiteral("gpsFix%1_time").arg(replacedTracker.idx), gt.when);
+	geoSettings->setValue(QStringLiteral("gpsFix%1_lat").arg(replacedTracker.idx), gt.location.lat.udeg);
+	geoSettings->setValue(QStringLiteral("gpsFix%1_lon").arg(replacedTracker.idx), gt.location.lon.udeg);
+	geoSettings->setValue(QStringLiteral("gpsFix%1_name").arg(replacedTracker.idx), gt.name);
 	replacedTracker.location = gt.location;
 	replacedTracker.name = gt.name;
 }
@@ -360,10 +348,10 @@ void GpsLocation::addFixToStorage(gpsTracker &gt)
 {
 	int nr = m_trackers.count();
 	geoSettings->setValue("count", nr + 1);
-	geoSettings->setValue(QString("gpsFix%1_time").arg(nr), gt.when);
-	geoSettings->setValue(QString("gpsFix%1_lat").arg(nr), gt.location.lat.udeg);
-	geoSettings->setValue(QString("gpsFix%1_lon").arg(nr), gt.location.lon.udeg);
-	geoSettings->setValue(QString("gpsFix%1_name").arg(nr), gt.name);
+	geoSettings->setValue(QStringLiteral("gpsFix%1_time").arg(nr), gt.when);
+	geoSettings->setValue(QStringLiteral("gpsFix%1_lat").arg(nr), gt.location.lat.udeg);
+	geoSettings->setValue(QStringLiteral("gpsFix%1_lon").arg(nr), gt.location.lon.udeg);
+	geoSettings->setValue(QStringLiteral("gpsFix%1_name").arg(nr), gt.name);
 	gt.idx = nr;
 	geoSettings->sync();
 	m_trackers.insert(gt.when, gt);
@@ -377,26 +365,26 @@ void GpsLocation::deleteFixFromStorage(gpsTracker &gt)
 		qDebug() << "no gps fix with timestamp" << when;
 		return;
 	}
-	if (geoSettings->value(QString("gpsFix%1_time").arg(gt.idx)).toLongLong() != when) {
+	if (geoSettings->value(QStringLiteral("gpsFix%1_time").arg(gt.idx)).toLongLong() != when) {
 		qDebug() << "uh oh - index for tracker has gotten out of sync...";
 		return;
 	}
 	if (cnt > 1) {
 		// now we move the last tracker into that spot (so our settings stay consecutive)
 		// and delete the last settings entry
-		when = geoSettings->value(QString("gpsFix%1_time").arg(cnt - 1)).toLongLong();
+		when = geoSettings->value(QStringLiteral("gpsFix%1_time").arg(cnt - 1)).toLongLong();
 		struct gpsTracker movedTracker = m_trackers.value(when);
 		movedTracker.idx = gt.idx;
 		m_trackers.remove(movedTracker.when);
 		m_trackers.insert(movedTracker.when, movedTracker);
-		geoSettings->setValue(QString("gpsFix%1_time").arg(movedTracker.idx), when);
-		geoSettings->setValue(QString("gpsFix%1_lat").arg(movedTracker.idx), movedTracker.location.lat.udeg);
-		geoSettings->setValue(QString("gpsFix%1_lon").arg(movedTracker.idx), movedTracker.location.lon.udeg);
-		geoSettings->setValue(QString("gpsFix%1_name").arg(movedTracker.idx), movedTracker.name);
-		geoSettings->remove(QString("gpsFix%1_lat").arg(cnt - 1));
-		geoSettings->remove(QString("gpsFix%1_lon").arg(cnt - 1));
-		geoSettings->remove(QString("gpsFix%1_time").arg(cnt - 1));
-		geoSettings->remove(QString("gpsFix%1_name").arg(cnt - 1));
+		geoSettings->setValue(QStringLiteral("gpsFix%1_time").arg(movedTracker.idx), when);
+		geoSettings->setValue(QStringLiteral("gpsFix%1_lat").arg(movedTracker.idx), movedTracker.location.lat.udeg);
+		geoSettings->setValue(QStringLiteral("gpsFix%1_lon").arg(movedTracker.idx), movedTracker.location.lon.udeg);
+		geoSettings->setValue(QStringLiteral("gpsFix%1_name").arg(movedTracker.idx), movedTracker.name);
+		geoSettings->remove(QStringLiteral("gpsFix%1_lat").arg(cnt - 1));
+		geoSettings->remove(QStringLiteral("gpsFix%1_lon").arg(cnt - 1));
+		geoSettings->remove(QStringLiteral("gpsFix%1_time").arg(cnt - 1));
+		geoSettings->remove(QStringLiteral("gpsFix%1_name").arg(cnt - 1));
 	}
 	geoSettings->setValue("count", cnt - 1);
 	geoSettings->sync();
@@ -426,5 +414,5 @@ void GpsLocation::clearGpsData()
 
 void GpsLocation::postError(QNetworkReply::NetworkError)
 {
-	status(QString("error when sending a GPS fix: %1").arg(reply->errorString()));
+	status(QStringLiteral("error when sending a GPS fix: %1").arg(reply->errorString()));
 }

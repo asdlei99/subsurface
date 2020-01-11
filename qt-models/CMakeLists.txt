@@ -17,12 +17,16 @@ set(SUBSURFACE_GENERIC_MODELS_LIB_SRCS
 	diveplannermodel.h
 	diveplotdatamodel.cpp
 	diveplotdatamodel.h
+	divetripmodel.cpp
+	divetripmodel.h
 	maplocationmodel.cpp
 	maplocationmodel.h
 	models.cpp
 	models.h
 	tankinfomodel.cpp
 	tankinfomodel.h
+	weightsysteminfomodel.cpp
+	weightsysteminfomodel.h
 )
 
 # models exclusively used in desktop builds
@@ -35,28 +39,26 @@ set(SUBSURFACE_DESKTOP_MODELS_LIB_SRCS
 	divepicturemodel.h
 	divesiteimportmodel.cpp
 	divesiteimportmodel.h
-	divetripmodel.cpp
-	divetripmodel.h
 	filtermodels.cpp
 	filtermodels.h
 	treemodel.cpp
 	treemodel.h
 	weightmodel.cpp
 	weightmodel.h
-	weightsysteminfomodel.cpp
-	weightsysteminfomodel.h
 	yearlystatisticsmodel.cpp
 	yearlystatisticsmodel.h
 )
 
 # models exclusively used in mobile builds
 set(SUBSURFACE_MOBILE_MODELS_LIB_SRCS
-	divelistmodel.cpp
-	divelistmodel.h
+	mobilefiltermodel.cpp
+	mobilefiltermodel.h
 	gpslistmodel.cpp
 	gpslistmodel.h
 	messagehandlermodel.cpp
 	messagehandlermodel.h
+	mobilelistmodel.cpp
+	mobilelistmodel.h
 )
 
 if (SUBSURFACE_TARGET_EXECUTABLE MATCHES "DesktopExecutable")

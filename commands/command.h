@@ -5,6 +5,9 @@
 #include "core/dive.h"
 #include <QVector>
 #include <QAction>
+#include <vector>
+
+struct DiveAndLocation;
 
 // We put everything in a namespace, so that we can shorten names without polluting the global namespace
 namespace Command {
@@ -28,7 +31,7 @@ void addDive(dive *d, const bool autogroup, bool newNumber);
 void importDives(struct dive_table *dives, struct trip_table *trips,
 		 struct dive_site_table *sites, int flags, const QString &source); // The tables are consumed!
 void deleteDive(const QVector<struct dive*> &divesToDelete);
-void shiftTime(const QVector<dive *> &changedDives, int amount);
+void shiftTime(const std::vector<dive *> &changedDives, int amount);
 void renumberDives(const QVector<QPair<dive *, int>> &divesToRenumber);
 void removeDivesFromTrip(const QVector<dive *> &divesToRemove);
 void removeAutogenTrips();
@@ -41,6 +44,7 @@ void splitDiveComputer(dive *d, int dc_num);
 void moveDiveComputerToFront(dive *d, int dc_num);
 void deleteDiveComputer(dive *d, int dc_num);
 void mergeDives(const QVector <dive *> &dives);
+void applyGPSFixes(const std::vector<DiveAndLocation> &fixes);
 
 // 3) Dive-site related commands
 

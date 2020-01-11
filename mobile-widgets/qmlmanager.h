@@ -13,12 +13,14 @@
 #include "core/btdiscovery.h"
 #include "core/gpslocation.h"
 #include "core/downloadfromdcthread.h"
-#include "qt-models/divelistmodel.h"
 #include "qt-models/completionmodels.h"
 #include "qt-models/divelocationmodel.h"
 #include "core/settings/qPrefCloudStorage.h"
 
 #define NOCLOUD_LOCALSTORAGE format_string("%s/cloudstorage/localrepo[master]", system_default_directory())
+
+class QAction;
+class DiveObjectHelper;
 
 class QMLManager : public QObject {
 	Q_OBJECT
@@ -29,8 +31,6 @@ class QMLManager : public QObject {
 	Q_PROPERTY(QString startPageText MEMBER m_startPageText WRITE setStartPageText NOTIFY startPageTextChanged)
 	Q_PROPERTY(bool verboseEnabled MEMBER m_verboseEnabled WRITE setVerboseEnabled NOTIFY verboseEnabledChanged)
 	Q_PROPERTY(QString notificationText MEMBER m_notificationText WRITE setNotificationText NOTIFY notificationTextChanged)
-	Q_PROPERTY(int updateSelectedDive MEMBER m_updateSelectedDive WRITE setUpdateSelectedDive NOTIFY updateSelectedDiveChanged)
-	Q_PROPERTY(int selectedDiveTimestamp MEMBER m_selectedDiveTimestamp WRITE setSelectedDiveTimestamp NOTIFY selectedDiveTimestampChanged)
 	Q_PROPERTY(QStringList suitList READ suitList NOTIFY suitListChanged)
 	Q_PROPERTY(QStringList buddyList READ buddyList NOTIFY buddyListChanged)
 	Q_PROPERTY(QStringList divemasterList READ divemasterList NOTIFY divemasterListChanged)
@@ -111,6 +111,9 @@ public:
 	Q_INVOKABLE int getConnectionIndex(const QString &deviceSubstr);
 	Q_INVOKABLE void setGitLocalOnly(const bool &value);
 	Q_INVOKABLE void setFilter(const QString filterText);
+	Q_INVOKABLE void toggle(int row);
+	Q_INVOKABLE void selectRow(int row);
+	Q_INVOKABLE void selectSwipeRow(int row);
 
 	static QMLManager *instance();
 	Q_INVOKABLE void registerError(QString error);
@@ -138,12 +141,6 @@ public:
 	QString notificationText() const;
 	void setNotificationText(QString text);
 
-	int updateSelectedDive() const;
-	void setUpdateSelectedDive(int idx);
-
-	int selectedDiveTimestamp() const;
-	void setSelectedDiveTimestamp(int when);
-
 	QString progressMessage() const;
 	void setProgressMessage(QString text);
 
@@ -151,8 +148,6 @@ public:
 	void setBtEnabled(bool value);
 
 	void setShowNonDiveComputers(bool show);
-
-	DiveListSortModel *dlSortModel;
 
 	QStringList suitList() const;
 	QStringList buddyList() const;
@@ -202,9 +197,8 @@ public slots:
 	bool toggleTags(bool toggle);
 	bool toggleCylinders(bool toggle);
 	bool toggleWeights(bool toggle);
-	bool undoDelete(int id);
-	QString addDive();
-	void addDiveAborted(int id);
+	void undoDelete(int id);
+	void addDive();
 	void applyGpsData();
 	void populateGpsData();
 	void cancelDownloadDC();
@@ -222,7 +216,7 @@ public slots:
 	QString getVersion() const;
 	void deleteGpsFix(quint64 when);
 	void revertToNoCloudIfNeeded();
-	void consumeFinishedLoad(timestamp_t currentDiveTimestamp);
+	void consumeFinishedLoad();
 	void refreshDiveList();
 	void screenChanged(QScreen *screen);
 	qreal lastDevicePixelRatio();
@@ -247,11 +241,7 @@ private:
 	GpsLocation *locationProvider;
 	bool m_loadFromCloud;
 	static QMLManager *m_instance;
-	struct dive *deletedDive;
-	struct dive_trip *deletedTrip;
 	QString m_notificationText;
-	int m_updateSelectedDive;
-	int m_selectedDiveTimestamp;
 	qreal m_lastDevicePixelRatio;
 	QElapsedTimer timer;
 	bool alreadySaving;
@@ -265,11 +255,12 @@ private:
 	bool m_btEnabled;
 	void updateAllGlobalLists();
 	void updateSiteList();
-	void setupDivesite(struct dive *d, struct dive_site *ds, double lat, double lon, const char *locationtext);
+	location_t getGps(QString &gps);
 	QString m_pluggedInDeviceName;
 	bool m_showNonDiveComputers;
 	struct dive *m_copyPasteDive = NULL;
 	struct dive_components what;
+	QAction *undoAction;
 
 	bool verifyCredentials(QString email, QString password, QString pin);
 
@@ -288,8 +279,6 @@ signals:
 	void loadFromCloudChanged();
 	void startPageTextChanged();
 	void notificationTextChanged();
-	void updateSelectedDiveChanged();
-	void selectedDiveTimestampChanged();
 	void sendScreenChanged(QScreen *screen);
 	void progressMessageChanged();
 	void btEnabledChanged();

@@ -2,16 +2,45 @@
 
 #include "divefilter.h"
 
+// The instance function is the same for desktop and mobile.
+// The rest is different.
+DiveFilter *DiveFilter::instance()
+{
+	static DiveFilter self;
+	return &self;
+}
+
 #ifdef SUBSURFACE_MOBILE
 
-DiveFilter::DiveFilter()
+#include "core/settings/qPrefGeneral.h"
+#include "core/qthelper.h" // For diveContainsText
+#include "qt-models/filtermodels.h"
+
+DiveFilter::DiveFilter() :
+	enabled(false),
+	includeNotes(false),
+	cs(Qt::CaseInsensitive)
 {
 }
 
 bool DiveFilter::showDive(const struct dive *d) const
 {
-	// TODO: Do something useful
-	return true;
+	return diveContainsText(d, filterString, cs, includeNotes);
+}
+
+void DiveFilter::setFilter(const QString &sIn)
+{
+	QString s = sIn.trimmed();
+	if (s.isEmpty()) {
+		enabled = false;
+		return;
+	}
+
+	enabled = true;
+	includeNotes = qPrefGeneral::filterFullTextNotes();
+	cs = qPrefGeneral::filterCaseSensitive() ? Qt::CaseSensitive : Qt::CaseInsensitive;
+	filterString = s;
+	emit diveListNotifier.filterReset();
 }
 
 #else // SUBSURFACE_MOBILE
@@ -104,12 +133,6 @@ namespace {
 		return check(dnotes, diveNotes, mode);
 	}
 
-}
-
-DiveFilter *DiveFilter::instance()
-{
-	static DiveFilter self;
-	return &self;
 }
 
 DiveFilter::DiveFilter() : diveSiteRefCount(0)

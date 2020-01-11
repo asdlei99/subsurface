@@ -50,7 +50,8 @@ public:
 		TRIP_ROLE,
 		DIVE_IDX,
 		SHOWN_ROLE,
-		SELECTED_ROLE
+		SELECTED_ROLE,
+		LAST_ROLE
 	};
 	enum Layout {
 		TREE,
@@ -90,6 +91,8 @@ protected:
 	// Access trip and dive data
 	static QVariant diveData(const struct dive *d, int column, int role);
 	static QVariant tripData(const dive_trip *trip, int column, int role);
+	static QString tripTitle(const dive_trip *trip);
+	static QString tripShortDate(const dive_trip *trip);
 	void sendShownChangedSignals(const std::vector<char> &changed, quintptr parentIndex);
 
 	virtual dive *diveOrNull(const QModelIndex &index) const = 0;	// Returns a dive if this index represents a dive, null otherwise

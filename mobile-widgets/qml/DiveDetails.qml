@@ -42,7 +42,6 @@ Kirigami.Page {
 	property alias cylinderIndex4: detailsEdit.cylinderIndex4
 	property alias usedGas: detailsEdit.usedGas
 	property alias gpsCheckbox: detailsEdit.gpsCheckbox
-	property int updateCurrentIdx: manager.updateSelectedDive
 	property alias rating: detailsEdit.rating
 	property alias visibility: detailsEdit.visibility
 	property alias usedCyl: detailsEdit.usedCyl
@@ -155,12 +154,10 @@ Kirigami.Page {
 		}
 		onTriggered: {
 			var deletedId = currentItem.modelData.id
-			var deletedIndex = diveDetailsListView.currentIndex
 			manager.deleteDive(deletedId)
-			pageStack.pop()
 			showPassiveNotification("Dive deleted", 5000, "Undo",
 						function() {
-							diveDetailsListView.currentIndex = manager.undoDelete(deletedId) ? deletedIndex : diveDetailsListView.currentIndex
+							manager.undoDelete(deletedId)
 						});
 		}
 	}
@@ -217,8 +214,6 @@ Kirigami.Page {
 
 	onCurrentItemChanged: {
 		if (currentItem && currentItem.modelData) {
-			// this is used when loading dives to maintain relative position in the dive list
-			manager.selectedDiveTimestamp = currentItem.modelData.date
 			// make sure the core data structures reflect that this dive is selected
 			manager.selectDive(currentItem.modelData.id)
 			// update the map to show the highlighted flag and center on it
@@ -229,15 +224,7 @@ Kirigami.Page {
 		}
 	}
 
-	function showDiveIndex(id) {
-		currentIndex = diveModel.getIdxForId(id);
-		diveDetailsListView.positionViewAtIndex(currentIndex, ListView.End);
-	}
-
 	function endEditMode() {
-		// if we were adding a dive, we need to remove it
-		if (state === "add")
-			manager.addDiveAborted(dive_id)
 		// just cancel the edit/add state
 		state = "view";
 		focus = false;
@@ -308,7 +295,7 @@ Kirigami.Page {
 		ListView {
 			id: diveDetailsListView
 			anchors.fill: parent
-			model: diveModel
+			model: swipeModel
 			currentIndex: -1
 			boundsBehavior: Flickable.StopAtBounds
 			maximumFlickVelocity: parent.width * 5
@@ -320,6 +307,7 @@ Kirigami.Page {
 			highlightRangeMode: ListView.StrictlyEnforceRange
 			onMovementEnded: {
 				currentIndex = indexAt(contentX+1, 1);
+				manager.selectSwipeRow(currentIndex)
 			}
 			delegate: Flickable {
 				id: internalScrollView
@@ -335,6 +323,11 @@ Kirigami.Page {
 				ScrollBar.vertical: ScrollBar { }
 			}
 			ScrollIndicator.horizontal: ScrollIndicator { }
+			Connections {
+				target: swipeModel
+				onCurrentDiveChanged: { currentIndex = index.row
+							diveDetailsListView.positionViewAtIndex(currentIndex, ListView.End) }
+			}
 		}
 	}
 	Flickable {

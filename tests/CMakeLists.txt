@@ -45,7 +45,7 @@ endif()
 if (SUBSURFACE_TARGET_EXECUTABLE MATCHES "DesktopExecutable")
 	set(TEST_SPECIFIC_LIBRARIES subsurface_models_desktop)
 else()
-	set(TEST_SPECIFIC_LIBRARIES subsurface_models_mobile )
+	set(TEST_SPECIFIC_LIBRARIES subsurface_models_mobile subsurface_commands_mobile)
 endif()
 
 # Helper function TEST used to created rules to build, link, install and run tests

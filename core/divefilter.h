@@ -8,13 +8,19 @@
 // This should be unified in the future.
 #ifdef SUBSURFACE_MOBILE
 
+#include <QString>
 class DiveFilter {
 public:
 	static DiveFilter *instance();
 
 	bool showDive(const struct dive *d) const;
+	void setFilter(const QString &s);
 private:
 	DiveFilter();
+	bool enabled;
+	bool includeNotes;
+	Qt::CaseSensitivity cs;
+	QString filterString;
 };
 
 #else
