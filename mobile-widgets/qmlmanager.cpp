@@ -1313,7 +1313,7 @@ void QMLManager::saveChangesCloud(bool forceRemoteSync)
 	git_local_only = glo;
 }
 
-void QMLManager::undoDelete(int)
+void QMLManager::undo()
 {
 	undoAction->activate(QAction::Trigger);
 	changesNeedSaving();

@@ -200,7 +200,7 @@ public slots:
 	bool toggleTags(bool toggle);
 	bool toggleCylinders(bool toggle);
 	bool toggleWeights(bool toggle);
-	void undoDelete(int id);
+	void undo();
 	void addDive();
 	void applyGpsData();
 	void populateGpsData();
