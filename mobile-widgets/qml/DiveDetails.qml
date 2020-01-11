@@ -333,8 +333,10 @@ Kirigami.Page {
 			ScrollIndicator.horizontal: ScrollIndicator { }
 			Connections {
 				target: swipeModel
-				onCurrentDiveChanged: { currentIndex = index.row
-							diveDetailsListView.positionViewAtIndex(currentIndex, ListView.End) }
+				onCurrentDiveChanged: {
+					currentIndex = index.row
+					diveDetailsListView.positionViewAtIndex(currentIndex, ListView.End)
+				}
 			}
 		}
 	}
