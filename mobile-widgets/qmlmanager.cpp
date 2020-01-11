@@ -16,6 +16,7 @@
 #include <QFile>
 #include <QtConcurrent>
 #include <QFuture>
+#include <QUndoStack>
 
 #include <QBluetoothLocalDevice>
 
@@ -51,6 +52,7 @@
 #include "core/worldmap-save.h"
 #include "core/uploadDiveLogsDE.h"
 #include "core/uploadDiveShare.h"
+#include "commands/command_base.h"
 #include "commands/command.h"
 
 QMLManager *QMLManager::m_instance = NULL;
@@ -262,6 +264,9 @@ QMLManager::QMLManager() : m_locationServiceEnabled(false),
 	what.tags = true;
 	what.cylinders = true;
 	what.weights = true;
+
+	// get updates to the undo text
+	connect(Command::getUndoStack(), &QUndoStack::undoTextChanged, this, &QMLManager::undoTextChanged);
 }
 
 void QMLManager::applicationStateChanged(Qt::ApplicationState state)
@@ -2085,4 +2090,10 @@ void QMLManager::setOldStatus(const qPrefCloudStorage::cloud_status value)
 		m_oldStatus = value;
 		emit oldStatusChanged();
 	}
+}
+
+QString QMLManager::getUndoText() const
+{
+	QString undoText = undoAction->text().replace(QRegExp("^&"),""); // the string appears to start with an ampersand...
+	return undoText;
 }
