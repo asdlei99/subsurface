@@ -16,7 +16,6 @@ MobileFilterModel::MobileFilterModel()
 
 	MobileListModel *m = MobileModels::instance()->listModel();
 	setSourceModel(m);
-	connect(m, &MobileListModel::currentDiveChanged, this, &MobileFilterModel::currentDiveChangedSlot);
 }
 
 // It is annoying that we can't simply map a row. We have to map a full index.
@@ -42,12 +41,3 @@ bool MobileFilterModel::filterAcceptsRow(int source_row, const QModelIndex &sour
 	QModelIndex index0 = m->index(source_row, 0, source_parent);
 	return m->data(index0, DiveTripModelBase::SHOWN_ROLE).value<bool>();
 }
-
-// Translate current dive into local indexes and re-emit signal
-void MobileFilterModel::currentDiveChangedSlot(QModelIndex index)
-{
-	QModelIndex local = mapFromSource(index);
-	if (local.isValid())
-		emit currentDiveChanged(mapFromSource(index));
-}
-

@@ -13,10 +13,6 @@ public:
 
 	void toggle(int row);
 	Q_INVOKABLE int shown(); // number dives that are accepted by the filter
-signals:
-	void currentDiveChanged(QModelIndex index);
-private slots:
-	void currentDiveChangedSlot(QModelIndex index);
 private:
 	int mapRowToSource(int row);
 	MobileFilterModel();
