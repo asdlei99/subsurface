@@ -89,12 +89,15 @@ signals:
 	void selectionChanged(const QVector<QModelIndex> &indexes);
 	void currentDiveChanged(QModelIndex index);
 protected:
+	QModelIndex oldCurrent;
+
 	// Access trip and dive data
 	static QVariant diveData(const struct dive *d, int column, int role);
 	static QVariant tripData(const dive_trip *trip, int column, int role);
 	static QString tripTitle(const dive_trip *trip);
 	static QString tripShortDate(const dive_trip *trip);
 	void sendShownChangedSignals(const std::vector<char> &changed, quintptr parentIndex);
+	void currentChanged(const QModelIndex &current);
 
 	virtual dive *diveOrNull(const QModelIndex &index) const = 0;	// Returns a dive if this index represents a dive, null otherwise
 	virtual void clearData() = 0;
@@ -162,6 +165,7 @@ private:
 	// Access trips and dives
 	int findTripIdx(const dive_trip *trip) const;
 	int findDiveIdx(const dive *d) const;			// Find _top_level_ dive
+	QModelIndex diveToIdx(const dive *d);			// Find _any_ dive
 	int findDiveInTrip(int tripIdx, const dive *d) const;	// Find dive inside trip. Second parameter is index of trip
 	int findInsertionIndex(const dive_trip *trip) const;	// Where to insert trip
 
@@ -194,6 +198,7 @@ private:
 	QVariant data(const QModelIndex &index, int role) const override;
 	bool lessThan(const QModelIndex &i1, const QModelIndex &i2) const override;
 	dive *diveOrNull(const QModelIndex &index) const override;
+	QModelIndex diveToIdx(const dive *d);
 
 	std::vector<dive *> items;				// TODO: access core data directly
 };
