@@ -55,7 +55,6 @@ public:
 		FirstGasRole,
 		CollapsedRole,
 		SelectedRole,
-		CurrentRole
 	};
 	QHash<int, QByteArray> roleNames() const override;
 protected:
@@ -96,9 +95,6 @@ private:
 	int rowCount(const QModelIndex &parent) const override;
 
 	int expandedRow;
-	int currentRow; // Row of the currently selected dive, -1 if none.
-signals:
-	void currentDiveChanged(QModelIndex index);
 private slots:
 	void prepareRemove(const QModelIndex &parent, int first, int last);
 	void doneRemove(const QModelIndex &parent, int first, int last);
@@ -107,7 +103,6 @@ private slots:
 	void prepareMove(const QModelIndex &parent, int first, int last, const QModelIndex &dest, int destRow);
 	void doneMove(const QModelIndex &parent, int first, int last, const QModelIndex &dest, int destRow);
 	void changed(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
-	void currentDiveChangedSlot(QModelIndex index);
 };
 
 class MobileSwipeModel : public MobileListModelBase {
@@ -154,7 +149,6 @@ private slots:
 	void prepareMove(const QModelIndex &parent, int first, int last, const QModelIndex &dest, int destRow);
 	void doneMove(const QModelIndex &parent, int first, int last, const QModelIndex &dest, int destRow);
 	void changed(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
-	void currentDiveChangedSlot(QModelIndex index);
 };
 
 // This convenience class provides access to the two mobile models.

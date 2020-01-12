@@ -10,6 +10,7 @@ QHash<int, QByteArray> MobileListModelBase::roleNames() const
 {
 	QHash<int, QByteArray> roles;
 	roles[DiveTripModelBase::IS_TRIP_ROLE] = "isTrip";
+	roles[DiveTripModelBase::CURRENT_ROLE] = "current";
 	roles[IsTopLevelRole] = "isTopLevel";
 	roles[DiveDateRole] = "date";
 	roles[TripIdRole] = "tripId";
@@ -45,7 +46,6 @@ QHash<int, QByteArray> MobileListModelBase::roleNames() const
 	roles[EndPressureRole] = "endPressure";
 	roles[FirstGasRole] = "firstGas";
 	roles[SelectedRole] = "selected";
-	roles[CurrentRole] = "current";
 	return roles;
 }
 
@@ -69,8 +69,7 @@ QModelIndex MobileListModelBase::parent(const QModelIndex &index) const
 }
 
 MobileListModel::MobileListModel(DiveTripModelBase *source) : MobileListModelBase(source),
-	expandedRow(-1),
-	currentRow(-1)
+	expandedRow(-1)
 {
 	connect(source, &DiveTripModelBase::modelAboutToBeReset, this, &MobileListModel::beginResetModel);
 	connect(source, &DiveTripModelBase::modelReset, this, &MobileListModel::endResetModel);
@@ -81,7 +80,6 @@ MobileListModel::MobileListModel(DiveTripModelBase *source) : MobileListModelBas
 	connect(source, &DiveTripModelBase::rowsAboutToBeMoved, this, &MobileListModel::prepareMove);
 	connect(source, &DiveTripModelBase::rowsMoved, this, &MobileListModel::doneMove);
 	connect(source, &DiveTripModelBase::dataChanged, this, &MobileListModel::changed);
-	connect(source, &DiveTripModelBase::currentDiveChanged, this, &MobileListModel::currentDiveChangedSlot);
 }
 
 // We want to show the newest dives first. Therefore, we have to invert
@@ -222,8 +220,6 @@ QVariant MobileListModel::data(const QModelIndex &index, int role) const
 {
 	if (role == IsTopLevelRole)
 		return index.row() <= expandedRow || index.row() > expandedRow + numSubItems();
-	else if (role == CurrentRole)
-		return index.row() == currentRow;
 
 	return source->data(mapToSource(index), role);
 }
@@ -261,7 +257,6 @@ void MobileListModel::doneRemove(const QModelIndex &parent, int first, int last)
 	if (range.visible) {
 		// Check if we have to move or remove the expanded or current item
 		updateRowAfterRemove(range, expandedRow);
-		updateRowAfterRemove(range, currentRow);
 
 		endRemoveRows();
 	}
@@ -282,9 +277,6 @@ void MobileListModel::doneInsert(const QModelIndex &parent, int first, int last)
 		// Check if we have to move the expanded item
 		if (!parent.isValid() && expandedRow >= 0 && range.first <= expandedRow)
 			expandedRow += last - first + 1;
-		// Check if we have to move the current item
-		if (currentRow >= 0 && range.first <= currentRow)
-			currentRow += last - first + 1;
 		endInsertRows();
 	}
 }
@@ -336,7 +328,6 @@ void MobileListModel::doneMove(const QModelIndex &parent, int first, int last, c
 	if (!range.visible && rangeDest.visible)
 		return doneInsert(parent, first, last);
 	updateRowAfterMove(range, rangeDest, expandedRow);
-	updateRowAfterMove(range, rangeDest, currentRow);
 }
 
 void MobileListModel::expand(int row)
@@ -374,20 +365,6 @@ void MobileListModel::expand(int row)
 	}
 	beginInsertRows(QModelIndex(), first, last);
 	expandedRow = row;
-	if (currentRow < 0 && current_dive) {
-		// If there is no current row, we have to check whether one of the expanded dives is the current dive
-		// Accessing the source model is very tedious - perhaps just get a pointer to the trip.
-		for (int i = 0; i < numRow; ++i) {
-			QModelIndex idx = source->index(numRow - i - 1, 0, tripIdx);
-			dive *d = source->data(idx, DiveTripModelBase::DIVE_ROLE).value<dive *>();
-			if (d == current_dive) {
-				currentRow = first + i;
-				break;
-			}
-		}
-	} else if (currentRow >= first) {
-		currentRow += numRow;
-	}
 	endInsertRows();
 }
 
@@ -399,6 +376,19 @@ void MobileListModel::changed(const QModelIndex &topLeft, const QModelIndex &bot
 		return;
 	}
 
+	// Special case CURRENT_ROLE: if a dive in a collapsed trip becomes current, expand that trip
+	// Note: changes to current must not be combined with other changes, therefore we can
+	// assume that roles.size() == 1.
+	if (roles.size() == 1 && roles[0] == DiveTripModelBase::CURRENT_ROLE &&
+	    source->data(topLeft, DiveTripModelBase::CURRENT_ROLE).value<bool>() &&
+	    topLeft.parent().isValid()) {
+		int parentRow = mapRowFromSourceTopLevel(topLeft.parent().row());
+		if (parentRow != expandedRow) {
+			expand(parentRow);
+			return;
+		}
+	}
+
 	if (topLeft.parent().isValid()) {
 		// This is a range in a trip. First do a sanity check.
 		if (topLeft.parent().row() != bottomRight.parent().row()) {
@@ -406,7 +396,7 @@ void MobileListModel::changed(const QModelIndex &topLeft, const QModelIndex &bot
 			return;
 		}
 
-		// Now check whether this even expanded
+		// Now check whether this is expanded
 		IndexRange range = mapRangeFromSource(topLeft.parent(), topLeft.row(), bottomRight.row());
 		if (!range.visible)
 			return;
@@ -446,15 +436,6 @@ void MobileListModel::unexpand()
 	}
 	beginRemoveRows(QModelIndex(), first, last);
 	expandedRow = -1;
-	// If the current row was inside the expanded list, reset it.
-	// Note: the current row
-	if (currentRow >= 0) {
-		// Treat the current row
-		if (first <= currentRow && last >= currentRow)
-			currentRow = -1; // We collapsed the currently selected dive -> there is no more current dive.
-		else if (currentRow > first)
-			currentRow -= numRows; // The currently selected dive is after the collapsed trip -> adjust row accordingly.
-	}
 	endRemoveRows();
 }
 
@@ -468,43 +449,6 @@ void MobileListModel::toggle(int row)
 		expand(row);
 }
 
-void MobileListModel::currentDiveChangedSlot(QModelIndex index)
-{
-	// There is an interesting special case if we are showing a top level dive
-	// and are switching to the dive above it in the dive list (so the next dive
-	// in chronological order, but above, or 'previous' on the screen) which is
-	// the last one in a trip by swiping the dive details.
-	// In this case we had no expanded trip before the swipe, but by selecting
-	// the new dive we implicitly expand the trip and therefore change the
-	// index of the top level dive that was previously selected.
-	bool noTripExpanded = expandedRow < 0;
-	// If this is in a trip, expand the trip first,
-	// potentially removing the old current dive.
-	if (index.parent().isValid()) {
-		int row = mapRowFromSourceTopLevel(index.parent().row());
-		expand(row);
-		// make sure we adjust our notion of which row was previously shown
-		if (noTripExpanded && currentRow > row)
-			currentRow += numSubItems();
-	} else {
-		// If outside of a trip, collapse any expanded trip.
-		unexpand();
-	}
-
-	int row = index.isValid() ? mapRowFromSource(index.parent(), index.row()) : -1;
-	if (row == currentRow)
-		return; // No change.
-
-	static const QVector<int> roles = { CurrentRole };
-	QModelIndex oldIdx = createIndex(currentRow, 0);
-	QModelIndex newIdx = row >= 0 ? createIndex(row, 0) : QModelIndex();
-	currentRow = row;
-	dataChanged(oldIdx, oldIdx, roles);
-	if (row >= 0)
-		dataChanged(newIdx, newIdx, roles);
-	emit currentDiveChanged(newIdx);
-}
-
 MobileSwipeModel::MobileSwipeModel(DiveTripModelBase *source) : MobileListModelBase(source)
 {
 	connect(source, &DiveTripModelBase::modelAboutToBeReset, this, &MobileSwipeModel::beginResetModel);
@@ -516,7 +460,6 @@ MobileSwipeModel::MobileSwipeModel(DiveTripModelBase *source) : MobileListModelB
 	connect(source, &DiveTripModelBase::rowsAboutToBeMoved, this, &MobileSwipeModel::prepareMove);
 	connect(source, &DiveTripModelBase::rowsMoved, this, &MobileSwipeModel::doneMove);
 	connect(source, &DiveTripModelBase::dataChanged, this, &MobileSwipeModel::changed);
-	connect(source, &DiveTripModelBase::currentDiveChanged, this, &MobileSwipeModel::currentDiveChangedSlot);
 
 	initData();
 }
@@ -797,17 +740,19 @@ void MobileSwipeModel::changed(const QModelIndex &topLeft, const QModelIndex &bo
 		return;
 	int fromSource = mapRowFromSource(bottomRight);
 	int toSource = mapRowFromSource(topLeft);
-	dataChanged(createIndex(fromSource, topLeft.column()), createIndex(toSource, bottomRight.column()), roles);
-}
+	QModelIndex fromIdx = createIndex(fromSource, topLeft.column());
+	QModelIndex toIdx = createIndex(toSource, bottomRight.column());
 
-void MobileSwipeModel::currentDiveChangedSlot(QModelIndex index)
-{
-	if (!index.isValid()) {
-		emit currentDiveChanged(QModelIndex());
-		return;
-	}
-	int rowSource = mapRowFromSource(index);
-	emit currentDiveChanged(createIndex(rowSource, 0));
+	dataChanged(fromIdx, toIdx, roles);
+
+	// Special case CURRENT_ROLE: if a dive becomes current, we send a signal so that the
+	// dive-details page can update the current dive. It would be nicer if the frontend could
+	// hook into the changed-signal, but currently I don't know how this works in QML.
+	// Note: changes to current must not be combined with other changes, therefore we can
+	// assume that roles.size() == 1.
+	if (roles.size() == 1 && roles[0] == DiveTripModelBase::CURRENT_ROLE &&
+	    source->data(topLeft, DiveTripModelBase::CURRENT_ROLE).value<bool>())
+		emit currentDiveChanged(fromIdx);
 }
 
 QVariant MobileSwipeModel::data(const QModelIndex &index, int role) const
