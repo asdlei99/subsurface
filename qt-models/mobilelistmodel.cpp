@@ -108,19 +108,6 @@ int MobileListModel::numSubItems() const
 	return source->rowCount(sourceIndex(expandedRow, 0));
 }
 
-bool MobileListModel::isExpandedRow(const QModelIndex &parent) const
-{
-	// The main list (parent is invalid) is always expanded.
-	if (!parent.isValid())
-		return true;
-
-	// A subitem (parent of parent is invalid) is never expanded.
-	if (parent.parent().isValid())
-		return false;
-
-	return parent.row() == expandedRow;
-}
-
 int MobileListModel::invertRow(const QModelIndex &parent, int row) const
 {
 	int numItems = source->rowCount(parent);
@@ -172,8 +159,7 @@ MobileListModel::IndexRange MobileListModel::mapRangeFromSource(const QModelInde
 		return { true, first, first + num };
 	} else {
 		int parentRow = invertRow(QModelIndex(), parent.row());
-		QModelIndex parentIndex = createIndex(parentRow, 0);
-		if (isExpandedRow(parentIndex)) {
+		if (parentRow == expandedRow) {
 			first = mapRowFromSourceTrip(parent, parentRow, last);
 			return { true, first, first + num };
 		} else {
@@ -195,8 +181,7 @@ MobileListModel::IndexRange MobileListModel::mapRangeFromSourceForInsert(const Q
 		return { true, first + 1, first + 1 + num };
 	} else {
 		int parentRow = invertRow(QModelIndex(), parent.row());
-		QModelIndex parentIndex = createIndex(parentRow, 0);
-		if (isExpandedRow(parentIndex)) {
+		if (parentRow == expandedRow) {
 			first = mapRowFromSourceTrip(parent, parentRow, first);
 			return { true, first + 1, first + 1 + num };
 		} else {
