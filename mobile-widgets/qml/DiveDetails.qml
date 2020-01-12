@@ -201,9 +201,14 @@ Kirigami.Page {
 			text: qsTr("Add dive to trip above <TBD>")
 		},
 		Kirigami.Action {
-			text: manager.undoText
-			enabled: text !== "Undo"
+			text: qsTr("Undo") + " " + manager.undoText
+			enabled: manager.undoText !== ""
 			onTriggered: manager.undo()
+		},
+		Kirigami.Action {
+			text: qsTr("Redo") + " " + manager.redoText
+			enabled: manager.redoText !== ""
+			onTriggered: manager.redo()
 		}
 	]
 

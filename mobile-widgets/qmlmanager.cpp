@@ -265,8 +265,9 @@ QMLManager::QMLManager() : m_locationServiceEnabled(false),
 	what.cylinders = true;
 	what.weights = true;
 
-	// get updates to the undo text
+	// get updates to the undo/redo texts
 	connect(Command::getUndoStack(), &QUndoStack::undoTextChanged, this, &QMLManager::undoTextChanged);
+	connect(Command::getUndoStack(), &QUndoStack::redoTextChanged, this, &QMLManager::redoTextChanged);
 }
 
 void QMLManager::applicationStateChanged(Qt::ApplicationState state)
@@ -1317,7 +1318,13 @@ void QMLManager::saveChangesCloud(bool forceRemoteSync)
 
 void QMLManager::undo()
 {
-	undoAction->activate(QAction::Trigger);
+	Command::getUndoStack()->undo();
+	changesNeedSaving();
+}
+
+void QMLManager::redo()
+{
+	Command::getUndoStack()->redo();
 	changesNeedSaving();
 }
 
@@ -2071,6 +2078,12 @@ void QMLManager::setOldStatus(const qPrefCloudStorage::cloud_status value)
 
 QString QMLManager::getUndoText() const
 {
-	QString undoText = undoAction->text().replace(QRegExp("^&"),""); // the string appears to start with an ampersand...
+	QString undoText = Command::getUndoStack()->undoText();
 	return undoText;
+}
+
+QString QMLManager::getRedoText() const
+{
+	QString redoText = Command::getUndoStack()->redoText();
+	return redoText;
 }
