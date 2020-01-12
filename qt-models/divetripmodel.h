@@ -51,6 +51,7 @@ public:
 		DIVE_IDX,
 		SHOWN_ROLE,
 		SELECTED_ROLE,
+		CURRENT_ROLE,
 		LAST_ROLE
 	};
 	enum Layout {
