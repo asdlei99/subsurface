@@ -423,7 +423,7 @@ void MobileListModel::changed(const QModelIndex &topLeft, const QModelIndex &bot
 
 		// Now check whether this even expanded
 		IndexRange range = mapRangeFromSource(topLeft.parent(), topLeft.row(), bottomRight.row());
-		if (range.visible)
+		if (!range.visible)
 			return;
 
 		dataChanged(createIndex(range.first, topLeft.column()), createIndex(range.last, bottomRight.column()), roles);
