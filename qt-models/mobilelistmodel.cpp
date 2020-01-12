@@ -377,16 +377,20 @@ void MobileListModel::changed(const QModelIndex &topLeft, const QModelIndex &bot
 	}
 
 	// Special case CURRENT_ROLE: if a dive in a collapsed trip becomes current, expand that trip
+	// and if a dive outside of a trip becomes current, collapse any expanded trip.
 	// Note: changes to current must not be combined with other changes, therefore we can
 	// assume that roles.size() == 1.
 	if (roles.size() == 1 && roles[0] == DiveTripModelBase::CURRENT_ROLE &&
-	    source->data(topLeft, DiveTripModelBase::CURRENT_ROLE).value<bool>() &&
-	    topLeft.parent().isValid()) {
+	    source->data(topLeft, DiveTripModelBase::CURRENT_ROLE).value<bool>()) {
+	    if (topLeft.parent().isValid()) {
 		int parentRow = mapRowFromSourceTopLevel(topLeft.parent().row());
 		if (parentRow != expandedRow) {
 			expand(parentRow);
 			return;
 		}
+	    } else {
+		    unexpand();
+	    }
 	}
 
 	if (topLeft.parent().isValid()) {
