@@ -30,7 +30,6 @@ Kirigami.ApplicationWindow {
 	property alias locationServiceEnabled: manager.locationServiceEnabled
 	property alias pluggedInDeviceName: manager.pluggedInDeviceName
 	property alias defaultCylinderIndex: settingsWindow.defaultCylinderIndex
-	property bool filterToggle: false
 	property string filterPattern: ""
 	property int colWidth: undefined
 

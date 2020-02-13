@@ -18,6 +18,7 @@ Kirigami.ScrollablePage {
 	property int horizontalPadding: Kirigami.Units.gridUnit / 2 - Kirigami.Units.smallSpacing  + 1
 	property QtObject diveListModel: diveTripModel
 	property string numShownText
+	property bool filterToggle: false
 
 	opacity: 0
 	Behavior on opacity {
@@ -406,6 +407,10 @@ Kirigami.ScrollablePage {
 		text: diveListModel ? qsTr("No dives in dive list") : qsTr("Please wait, filtering dive list")
 		visible: diveListView.visible && diveListView.count === 0
 	}
+	onFilterToggleChanged: {
+		manager.appendTextToLog("======== filterToggle changed to: " + filterToggle)
+	}
+
 	Component {
 		id: filterHeader
 		Rectangle {
@@ -417,19 +422,19 @@ Kirigami.ScrollablePage {
 			anchors.left: parent.left
 			anchors.right: parent.right
 			color: subsurfaceTheme.backgroundColor
-			enabled: rootItem.filterToggle
+			enabled: page.filterToggle
 			RowLayout {
 				id: filterBar
 				z: 5 //make sure it sits on top
 				states: [
 					State {
 						name: "isVisible"
-						when: rootItem.filterToggle
+						when: page.filterToggle
 						PropertyChanges { target: filterBar; height: sitefilter.implicitHeight }
 					},
 					State {
 						name: "isHidden"
-						when: !rootItem.filterToggle
+						when: !page.filterToggle
 						PropertyChanges { target: filterBar; height: 0 }
 					}
 
@@ -457,8 +462,11 @@ Kirigami.ScrollablePage {
 					onEnabledChanged: {
 						// reset the filter when it gets toggled
 						text = ""
-						if (visible) {
+						if (enabled) {
 							forceActiveFocus()
+							manager.appendTextToLog("======== filter text field is now visible")
+						} else {
+							manager.appendTextToLog("======== filter text field is now invisible")
 						}
 					}
 				}
@@ -468,6 +476,7 @@ Kirigami.ScrollablePage {
 					verticalAlignment: Text.AlignVCenter
 					text: numShownText
 				}
+				onHeightChanged: { manager.appendTextToLog("======== filterBar height changed to: " + height) }
 			}
 		}
 	}
@@ -538,9 +547,11 @@ Kirigami.ScrollablePage {
 		}
 		text: qsTr("Filter dives")
 		onTriggered: {
-			rootItem.filterToggle = !rootItem.filterToggle
+			manager.appendTextToLog("======== Filter was " + page.filterToggle)
+			page.filterToggle = !page.filterToggle
 			manager.setFilter("")
 			numShownText = diveModel.shown()
+			manager.appendTextToLog("======== Filter toggled to " + page.filterToggle)
 		}
 	}
 

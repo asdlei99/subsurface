@@ -32,10 +32,9 @@ Kirigami.ScrollablePage {
 			Layout.maximumWidth: pageWidth / 2
 			Layout.maximumHeight: Layout.maximumWidth
 		}
-
 		Kirigami.Heading {
 			text: qsTr("A mobile version of the free Subsurface divelog software.\n") +
-				qsTr("View your dive logs while on the go.")
+			      qsTr("View your dive logs while on the go.")
 			level: 4
 			Layout.alignment: Qt.AlignHCenter
 			Layout.topMargin: Kirigami.Units.largeSpacing * 3
@@ -44,7 +43,6 @@ Kirigami.ScrollablePage {
 			anchors.horizontalCenter: parent.Center
 			horizontalAlignment: Text.AlignHCenter
 		}
-
 		Kirigami.Heading {
 			text: qsTr("Version: %1\n\n© Subsurface developer team\n2011-2019").arg(manager.getVersion())
 			level: 5
@@ -56,6 +54,12 @@ Kirigami.ScrollablePage {
 			anchors.horizontalCenter: parent.Center
 			horizontalAlignment: Text.AlignHCenter
 		}
+
+		/* comment out the next two lines, except for test builds */
+		TemplateLine { }
+		TemplateLabel { text: "This is a test version for the filter toggle" }
+		/* comment out the two lines above, except for test builds */
+
 		TemplateButton {
 			id: copyAppLogToClipboard
 			Layout.alignment: Qt.AlignHCenter
@@ -63,7 +67,7 @@ Kirigami.ScrollablePage {
 			onClicked: {
 				manager.copyAppLogToClipboard()
 				rootItem.returnTopPage()
-				}
+			}
 		}
 	}
 }
