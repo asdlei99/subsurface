@@ -742,6 +742,14 @@ void MobileSwipeModel::changed(const QModelIndex &topLeft, const QModelIndex &bo
 {
 	if (!topLeft.isValid() || !bottomRight.isValid())
 		return;
+
+	// We don't display trips in the swipe model. If we get changed signals for that - ignore it.
+	// Subtle: we only check that for single-row changes, because the source model sends changes
+	// to trips one-by-one. The way we query the source model is ... not nice to read.
+	if (topLeft.row() == bottomRight.row() &&
+	    source->data(topLeft, DiveTripModelBase::IS_TRIP_ROLE).value<bool>())
+		return;
+
 	int fromSource = mapRowFromSource(bottomRight);
 	int toSource = mapRowFromSource(topLeft);
 	QModelIndex fromIdx = createIndex(fromSource, topLeft.column());
