@@ -574,6 +574,17 @@ int MobileSwipeModel::mapRowFromSource(const QModelIndex &idx) const
 	return mapRowFromSource(idx.parent(), idx.row());
 }
 
+int MobileSwipeModel::mapRowFromSourceForInsert(const QModelIndex &parent, int row) const
+{
+	if (!parent.isValid()) {
+		qWarning("MobileSwipeModel::mapRowFromSourceForInsert() only supported for dives in trips!");
+		return mapTopLevelFromSourceForInsert(row);
+	}
+	int topLevelRow = mapTopLevelFromSource(parent.row());
+	int count = elementCountInTopLevel(topLevelRow);
+	return firstElement[topLevelRow] + count - row; // Note: we invert the direction!
+}
+
 // Remove top-level items. Parameters with standard range semantics (pointer to first and past last element).
 int MobileSwipeModel::removeTopLevel(int begin, int end)
 {
@@ -672,8 +683,10 @@ void MobileSwipeModel::doneInsert(const QModelIndex &parent, int first, int last
 		}
 	} else {
 		// This is part of a trip. Only the number of items has to be changed.
-		beginInsertRows(QModelIndex(), mapRowFromSource(parent, last), mapRowFromSource(parent, first));
-		updateTopLevel(mapTopLevelFromSource(parent.row()), last - first + 1);
+		int row = mapRowFromSourceForInsert(parent, first);
+		int count = last - first + 1;
+		beginInsertRows(QModelIndex(), row, row + count - 1);
+		updateTopLevel(mapTopLevelFromSource(parent.row()), count);
 		endInsertRows();
 	}
 	invalidateSourceRowCache();

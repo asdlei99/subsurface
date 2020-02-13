@@ -130,6 +130,7 @@ private:
 	int elementCountInTopLevel(int row) const;
 	int mapRowFromSource(const QModelIndex &parent, int row) const;
 	int mapRowFromSource(const QModelIndex &parent) const;
+	int mapRowFromSourceForInsert(const QModelIndex &parent, int row) const;
 	void invalidateSourceRowCache() const;
 	void updateSourceRowCache(int row) const;
 
