@@ -226,9 +226,9 @@ Kirigami.ScrollablePage {
 							manager.copyDiveData(id)
 						}
 						onPressAndHold: {
-								globalDrawer.close()
-								manager.copyDiveData(id)
-								pageStack.push(settingsCopyWindow)
+							globalDrawer.close()
+							manager.copyDiveData(id)
+							pageStack.push(settingsCopyWindow)
 						}
 					}
 				}
