@@ -304,4 +304,11 @@ void editTripNotes(dive_trip *trip, const QString &s)
 	execute(new EditTripNotes(trip, s));
 }
 
+#ifdef SUBSURFACE_MOBILE
+void editDive(dive *oldDive, dive *newDive)
+{
+	execute(new EditDive(oldDive, newDive));
+}
+#endif // SUBSURFACE_MOBILE
+
 } // namespace Command

@@ -375,6 +375,22 @@ private:
 	void redo() override;
 };
 
+#ifdef SUBSURFACE_MOBILE
+// Edit a full dive. This is used on mobile where we don't have per-field granularity
+class EditDive : public Base {
+public:
+	EditDive(dive *oldDive, dive *newDive); // Takes ownership of newDive
+private:
+	dive *oldDive; // Dive that is going to be overwritten
+	OwningDivePtr newDive; // New data
+	int changedFields;
+
+	void undo() override;
+	void redo() override;
+	bool workToBeDone() override;
+};
+#endif // SUBSURFACE_MOBILE
+
 } // namespace Command
 
 #endif
