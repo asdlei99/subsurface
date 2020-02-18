@@ -199,7 +199,7 @@ public slots:
 	bool toggleWeights(bool toggle);
 	void undo();
 	void redo();
-	void addDive();
+	int addDive();
 	void applyGpsData();
 	void populateGpsData();
 	void cancelDownloadDC();

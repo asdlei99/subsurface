@@ -1532,7 +1532,7 @@ void QMLManager::cancelDownloadDC()
 	import_thread_cancelled = true;
 }
 
-void QMLManager::addDive()
+int QMLManager::addDive()
 {
 	appendTextToLog("Adding new dive.");
 
@@ -1550,6 +1550,9 @@ void QMLManager::addDive()
 	fixup_dive(&d);
 
 	Command::addDive(&d, autogroup, true);
+
+	// the QML UI uses the return value to set up the edit screen
+	return d.id;
 }
 
 QString QMLManager::getCurrentPosition()
