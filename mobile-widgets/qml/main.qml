@@ -725,7 +725,7 @@ if you have network connectivity and want to sync your data to cloud storage."),
 		}
 	}
 
-	NewDiveList {
+	DiveList {
 		id: diveList
 		opacity: 0
 		Behavior on opacity {
