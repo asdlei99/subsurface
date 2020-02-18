@@ -155,8 +155,8 @@ QMLManager::QMLManager() : m_locationServiceEnabled(false),
 	alreadySaving(false),
 	m_pluggedInDeviceName(""),
 	m_showNonDiveComputers(false),
-	m_oldStatus(qPrefCloudStorage::CS_UNKNOWN),
-	undoAction(Command::undoAction(this))
+	undoAction(Command::undoAction(this)),
+	m_oldStatus(qPrefCloudStorage::CS_UNKNOWN)
 {
 	m_instance = this;
 	m_lastDevicePixelRatio = qApp->devicePixelRatio();
