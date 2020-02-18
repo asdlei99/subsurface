@@ -270,6 +270,11 @@ QMLManager::QMLManager() : m_locationServiceEnabled(false),
 	// get updates to the undo/redo texts
 	connect(Command::getUndoStack(), &QUndoStack::undoTextChanged, this, &QMLManager::undoTextChanged);
 	connect(Command::getUndoStack(), &QUndoStack::redoTextChanged, this, &QMLManager::redoTextChanged);
+
+	// monitor when dives changed - but only in verbose mode
+	// careful - changing verbose at runtime isn't enough (of course that could be added if we want it)
+	if (verbose)
+		connect(&diveListNotifier, &DiveListNotifier::divesChanged, this, &QMLManager::divesChanged);
 }
 
 void QMLManager::applicationStateChanged(Qt::ApplicationState state)
@@ -2140,6 +2145,16 @@ void QMLManager::setOldStatus(const qPrefCloudStorage::cloud_status value)
 	if (m_oldStatus != value) {
 		m_oldStatus = value;
 		emit oldStatusChanged();
+	}
+}
+
+void QMLManager::divesChanged(const QVector<dive *> &dives, DiveField field)
+{
+	Q_UNUSED(field)
+	for (struct dive *d: dives) {
+		qDebug() << "dive #" << d->number << "changed, cache is" << (dive_cache_is_valid(d) ? "valid" : "invalidated");
+		// a brute force way to deal with that would of course be to call
+		// invalidate_dive_cache(d);
 	}
 }
 
