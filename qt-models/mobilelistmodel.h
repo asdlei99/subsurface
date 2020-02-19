@@ -55,6 +55,7 @@ public:
 		FirstGasRole,
 		CollapsedRole,
 		SelectedRole,
+		DiveInTripRole,
 	};
 	QHash<int, QByteArray> roleNames() const override;
 protected:
