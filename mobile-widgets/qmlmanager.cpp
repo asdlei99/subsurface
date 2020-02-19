@@ -1105,6 +1105,9 @@ void QMLManager::commitChanges(QString diveId, QString number, QString date, QSt
 			       QString airtemp, QString watertemp, QString suit, QString buddy, QString diveMaster, QString weight, QString notes,
 			       QStringList startpressure, QStringList endpressure, QStringList gasmix, QStringList usedCylinder, int rating, int visibility, QString state)
 {
+	if (verbose)
+		appendTextToLog(QString("commitChanges(diveId '%1', number '%2', date '%3', location '%4', gps '%5', duration '%6', depth '%7', state '%8'")
+				.arg(diveId).arg(number).arg(date).arg(location).arg(gps).arg(duration).arg(depth).arg(state));
 	struct dive *orig = get_dive_by_uniq_id(diveId.toInt());
 
 	if (!orig) {
