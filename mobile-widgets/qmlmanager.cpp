@@ -1534,13 +1534,11 @@ void QMLManager::cancelDownloadDC()
 
 int QMLManager::addDive()
 {
-	appendTextToLog("Adding new dive.");
-
 	// TODO: Duplicate code with desktop-widgets/mainwindow.cpp
 	// create a dive an hour from now with a default depth (15m/45ft) and duration (40 minutes)
 	// as a starting point for the user to edit
 	struct dive d = { 0 };
-	d.id = dive_getUniqID();
+	int diveId = d.id = dive_getUniqID();
 	d.when = QDateTime::currentMSecsSinceEpoch() / 1000L + gettimezoneoffset() + 3600;
 	d.dc.duration.seconds = 40 * 60;
 	d.dc.maxdepth.mm = M_OR_FT(15, 45);
@@ -1549,10 +1547,13 @@ int QMLManager::addDive()
 	fake_dc(&d.dc);
 	fixup_dive(&d);
 
+	// addDive takes over the dive and clears out the structure passed in
 	Command::addDive(&d, autogroup, true);
 
+	if (verbose)
+		appendTextToLog(QString("Adding new dive with id '%1'").arg(diveId));
 	// the QML UI uses the return value to set up the edit screen
-	return d.id;
+	return diveId;
 }
 
 QString QMLManager::getCurrentPosition()
