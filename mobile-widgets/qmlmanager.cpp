@@ -878,17 +878,29 @@ void QMLManager::refreshDiveList()
 	MobileModels::instance()->reset();
 }
 
-void QMLManager::setupDivesite(struct dive *d, struct dive_site *ds, double lat, double lon, const char *locationtext)
+// Ouch. Editing a dive might create a dive site or change an existing dive site.
+// The following structure describes such a change caused by a dive edit.
+// Hopefully, we can remove this in due course by using finer-grained undo-commands.
+struct DiveSiteChange {
+	Command::OwningDiveSitePtr createdDs; // not-null if we created a dive site.
+
+	dive_site *editDs = nullptr; // not-null if we are supposed to edit an existing dive site.
+	location_t location = zero_location; // new value of the location if we edit an existing dive site.
+
+	bool changed = false; // true if either a dive site or the dive was changed.
+};
+
+static void setupDivesite(DiveSiteChange &res, struct dive *d, struct dive_site *ds, double lat, double lon, const char *locationtext)
 {
 	location_t location = create_location(lat, lon);
 	if (ds) {
-		ds->location = location;
+		res.editDs = ds;
+		res.location = location;
 	} else {
-		unregister_dive_from_dive_site(d);
-		add_dive_to_dive_site(d, create_dive_site_with_gps(locationtext, &location, &dive_site_table));
-		// We created a new dive site - let the dive site model know.
-		updateSiteList();
+		res.createdDs.reset(create_dive_site_with_gps(locationtext, &location, &dive_site_table));
+		add_dive_to_dive_site(d, res.createdDs.get());
 	}
+	res.changed = true;
 }
 
 bool QMLManager::checkDate(const DiveObjectHelper &myDive, struct dive *d, QString date)
@@ -996,20 +1008,19 @@ parsed:
 	return false;
 }
 
-bool QMLManager::checkLocation(const DiveObjectHelper &myDive, struct dive *d, QString location, QString gps)
+bool QMLManager::checkLocation(DiveSiteChange &res, const DiveObjectHelper &myDive, struct dive *d, QString location, QString gps)
 {
-	bool diveChanged = false;
 	struct dive_site *ds = get_dive_site_for_dive(d);
 	qDebug() << "checkLocation" << location << "gps" << gps << "dive had" << myDive.location << "gps" << myDive.gas;
 	if (myDive.location != location) {
-		diveChanged = true;
 		ds = get_dive_site_by_name(qPrintable(location), &dive_site_table);
-		if (!ds && !location.isEmpty())
-			ds = create_dive_site(qPrintable(location), &dive_site_table);
+		if (!ds && !location.isEmpty()) {
+			res.createdDs.reset(create_dive_site(qPrintable(location), &dive_site_table));
+			res.changed = true;
+			ds = res.createdDs.get();
+		}
 		unregister_dive_from_dive_site(d);
 		add_dive_to_dive_site(d, ds);
-		// We created a new dive site - let the dive site model know.
-		updateSiteList();
 	}
 	// now make sure that the GPS coordinates match - if the user changed the name but not
 	// the GPS coordinates, this still does the right thing as the now new dive site will
@@ -1019,18 +1030,15 @@ bool QMLManager::checkLocation(const DiveObjectHelper &myDive, struct dive *d, Q
 		if (parseGpsText(gps, &lat, &lon)) {
 			qDebug() << "parsed GPS, using it";
 			// there are valid GPS coordinates - just use them
-			setupDivesite(d, ds, lat, lon, qPrintable(myDive.location));
-			diveChanged = true;
+			setupDivesite(res, d, ds, lat, lon, qPrintable(myDive.location));
 		} else if (gps == GPS_CURRENT_POS) {
 			qDebug() << "gps was our default text for no GPS";
 			// user asked to use current pos
 			QString gpsString = getCurrentPosition();
 			if (gpsString != GPS_CURRENT_POS) {
 				qDebug() << "but now I got a valid location" << gpsString;
-				if (parseGpsText(qPrintable(gpsString), &lat, &lon)) {
-					setupDivesite(d, ds, lat, lon, qPrintable(myDive.location));
-					diveChanged = true;
-				}
+				if (parseGpsText(qPrintable(gpsString), &lat, &lon))
+					setupDivesite(res, d, ds, lat, lon, qPrintable(myDive.location));
 			} else {
 				appendTextToLog("couldn't get GPS location in time");
 			}
@@ -1039,7 +1047,7 @@ bool QMLManager::checkLocation(const DiveObjectHelper &myDive, struct dive *d, Q
 			appendTextToLog(QString("wasn't able to parse gps string '%1'").arg(gps));
 		}
 	}
-	return diveChanged;
+	return res.changed;
 }
 
 bool QMLManager::checkDuration(const DiveObjectHelper &myDive, struct dive *d, QString duration)
@@ -1129,7 +1137,8 @@ void QMLManager::commitChanges(QString diveId, QString number, QString date, QSt
 
 	diveChanged = checkDate(myDive, d, date);
 
-	diveChanged |= checkLocation(myDive, d, location, gps);
+	DiveSiteChange dsChange;
+	diveChanged |= checkLocation(dsChange, myDive, d, location, gps);
 
 	diveChanged |= checkDuration(myDive, d, duration);
 
@@ -1273,7 +1282,7 @@ void QMLManager::commitChanges(QString diveId, QString number, QString date, QSt
 			fake_dc(&d->dc);
 		}
 		fixup_dive(d);
-		Command::editDive(orig, d_ptr.release()); // With release() we're giving up ownership
+		Command::editDive(orig, d_ptr.release(), dsChange.createdDs.release(), dsChange.editDs, dsChange.location); // With release() we're giving up ownership
 		changesNeedSaving();
 	}
 }

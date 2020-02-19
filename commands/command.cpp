@@ -305,9 +305,9 @@ void editTripNotes(dive_trip *trip, const QString &s)
 }
 
 #ifdef SUBSURFACE_MOBILE
-void editDive(dive *oldDive, dive *newDive)
+void editDive(dive *oldDive, dive *newDive, dive_site *createDs, dive_site *changeDs, location_t dsLocation)
 {
-	execute(new EditDive(oldDive, newDive));
+	execute(new EditDive(oldDive, newDive, createDs, changeDs, dsLocation));
 }
 #endif // SUBSURFACE_MOBILE
 

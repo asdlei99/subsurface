@@ -7,6 +7,9 @@
 #include "core/subsurface-string.h"
 #include "core/tag.h"
 #include "qt-models/weightsysteminfomodel.h"
+#ifdef SUBSURFACE_MOBILE
+#include "qt-models/divelocationmodel.h"
+#endif
 
 namespace Command {
 
@@ -1156,10 +1159,14 @@ void EditWeight::undo()
 
 #ifdef SUBSURFACE_MOBILE
 
-EditDive::EditDive(dive *oldDiveIn, dive *newDiveIn)
+EditDive::EditDive(dive *oldDiveIn, dive *newDiveIn, dive_site *createDs, dive_site *editDs, location_t dsLocationIn)
 	: oldDive(oldDiveIn)
 	, newDive(newDiveIn)
 	, changedFields(DiveField::NONE)
+	, siteToRemove(nullptr)
+	, siteToAdd(createDs)
+	, siteToEdit(editDs)
+	, dsLocation(dsLocationIn)
 {
 	if (!oldDive || ! newDive)
 		return;
@@ -1214,13 +1221,31 @@ EditDive::EditDive(dive *oldDiveIn, dive *newDiveIn)
 		changedFields |= DiveField::SALINITY;
 }
 
-// Undo and redo do the same as the dives are simply exchanged
 void EditDive::undo()
 {
-	redo();
+	if (siteToRemove) {
+		int idx = unregister_dive_site(siteToRemove);
+		siteToAdd.reset(siteToRemove);
+		emit diveListNotifier.diveSiteDeleted(siteToRemove, idx); // Inform frontend of removed dive site.
+	}
+
+	exchangeDives();
+	editDs();
 }
 
 void EditDive::redo()
+{
+	if (siteToAdd) {
+		siteToRemove = siteToAdd.get();
+		int idx = register_dive_site(siteToAdd.release()); // Return ownership to backend.
+		emit diveListNotifier.diveSiteAdded(siteToRemove, idx); // Inform frontend of new dive site.
+	}
+
+	exchangeDives();
+	editDs();
+}
+
+void EditDive::exchangeDives()
 {
 	// Bluntly exchange dive data by shallow copy
 	std::swap(*newDive, *oldDive);
@@ -1244,6 +1269,14 @@ void EditDive::redo()
 
 	// Select the changed dives
 	setSelection( { oldDive }, oldDive);
+}
+
+void EditDive::editDs()
+{
+	if (siteToEdit) {
+		std::swap(siteToEdit->location, dsLocation);
+		emit diveListNotifier.diveSiteChanged(siteToEdit, LocationInformationModel::LOCATION); // Inform frontend of changed dive site.
+	}
 }
 
 bool EditDive::workToBeDone()
