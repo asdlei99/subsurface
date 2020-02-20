@@ -1300,7 +1300,7 @@ void DiveTripModelTree::divesTimeChangedTrip(dive_trip *trip, timestamp_t delta,
 	divesAdded(trip, false, dives);
 }
 
-QModelIndex DiveTripModelTree::diveToIdx(const dive *d)
+QModelIndex DiveTripModelTree::diveToIdx(const dive *d) const
 {
 	if (!d)
 		return QModelIndex();
@@ -1567,7 +1567,7 @@ void DiveTripModelList::divesTimeChanged(timestamp_t delta, const QVector<dive *
 	divesAdded(nullptr, false, dives);
 }
 
-QModelIndex DiveTripModelList::diveToIdx(const dive *d)
+QModelIndex DiveTripModelList::diveToIdx(const dive *d) const
 {
 	if (!d)
 		return QModelIndex();

@@ -102,6 +102,7 @@ protected:
 	virtual dive *diveOrNull(const QModelIndex &index) const = 0;	// Returns a dive if this index represents a dive, null otherwise
 	virtual void clearData() = 0;
 	virtual void populate() = 0;
+	virtual QModelIndex diveToIdx(const dive *d) const = 0;
 };
 
 class DiveTripModelTree : public DiveTripModelBase
@@ -165,7 +166,7 @@ private:
 	// Access trips and dives
 	int findTripIdx(const dive_trip *trip) const;
 	int findDiveIdx(const dive *d) const;			// Find _top_level_ dive
-	QModelIndex diveToIdx(const dive *d);			// Find _any_ dive
+	QModelIndex diveToIdx(const dive *d) const;		// Find _any_ dive
 	int findDiveInTrip(int tripIdx, const dive *d) const;	// Find dive inside trip. Second parameter is index of trip
 	int findInsertionIndex(const dive_trip *trip) const;	// Where to insert trip
 
@@ -198,7 +199,7 @@ private:
 	QVariant data(const QModelIndex &index, int role) const override;
 	bool lessThan(const QModelIndex &i1, const QModelIndex &i2) const override;
 	dive *diveOrNull(const QModelIndex &index) const override;
-	QModelIndex diveToIdx(const dive *d);
+	QModelIndex diveToIdx(const dive *d) const;
 
 	std::vector<dive *> items;				// TODO: access core data directly
 };
