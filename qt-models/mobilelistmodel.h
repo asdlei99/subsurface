@@ -56,6 +56,8 @@ public:
 		CollapsedRole,
 		SelectedRole,
 		DiveInTripRole,
+		TripAbove,
+		TripBelow,
 	};
 	QHash<int, QByteArray> roleNames() const override;
 protected:
