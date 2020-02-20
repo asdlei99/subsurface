@@ -533,21 +533,32 @@ bool DiveTripModelBase::setData(const QModelIndex &index, const QVariant &value,
 	return true;
 }
 
-void DiveTripModelBase::currentChanged(const QModelIndex &current)
+void DiveTripModelBase::currentChanged()
 {
-	if (oldCurrent == current)
+	if (oldCurrent == current_dive)
 		return;
 
 	// On Desktop we use a signal to forward current-dive changed, on mobile we use ROLE_CURRENT.
 	// TODO: Unify - use the role for both.
 #if defined(SUBSURFACE_MOBILE)
 	static QVector<int> roles = { CURRENT_ROLE };
-	dataChanged(oldCurrent, oldCurrent, roles);
-	dataChanged(current, current, roles);
+	if (oldCurrent) {
+		QModelIndex oldIdx = diveToIdx(oldCurrent);
+		dataChanged(oldIdx, oldIdx, roles);
+	}
+	if (current_dive) {
+		QModelIndex newIdx = diveToIdx(current_dive);
+		dataChanged(newIdx, newIdx, roles);
+	}
 #else
-	emit currentDiveChanged(current);
+	if (current_dive) {
+		QModelIndex newIdx = diveToIdx(current_dive);
+		emit currentDiveChanged(newIdx);
+	} else {
+		emit currentDiveChanged(QModelIndex());
+	}
 #endif
-	oldCurrent = current;
+	oldCurrent = current_dive;
 }
 
 // Find a range of matching elements in a vector.
@@ -718,7 +729,7 @@ void DiveTripModelTree::populate()
 	}
 
 	// Remember the index of the current dive
-	oldCurrent = diveToIdx(current_dive);
+	oldCurrent = current_dive;
 }
 
 int DiveTripModelTree::rowCount(const QModelIndex &parent) const
@@ -1344,8 +1355,7 @@ void DiveTripModelTree::divesSelected(const QVector<dive *> &dives, dive *curren
 	emit selectionChanged(indexes);
 
 	// The current dive has changed. Transform the current dive into an index and pass it on to the view.
-	QModelIndex currentIdx = diveToIdx(current);
-	currentChanged(currentIdx);
+	currentChanged();
 }
 
 void DiveTripModelTree::divesSelectedTrip(dive_trip *trip, const QVector<dive *> &dives, QVector<QModelIndex> &indexes)
@@ -1419,7 +1429,7 @@ void DiveTripModelList::populate()
 		items.push_back(get_dive(i));
 
 	// Remember the index of the current dive
-	oldCurrent = diveToIdx(current_dive);
+	oldCurrent = current_dive;
 }
 
 int DiveTripModelList::rowCount(const QModelIndex &parent) const
@@ -1602,8 +1612,7 @@ void DiveTripModelList::divesSelected(const QVector<dive *> &dives, dive *curren
 	emit selectionChanged(indexes);
 
 	// The current dive has changed. Transform the current dive into an index and pass it on to the view.
-	QModelIndex currentIdx = diveToIdx(current);
-	currentChanged(currentIdx);
+	currentChanged();
 }
 
 // Simple sorting helper for sorting against a criterium and if

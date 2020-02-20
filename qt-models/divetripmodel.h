@@ -89,7 +89,7 @@ signals:
 	void selectionChanged(const QVector<QModelIndex> &indexes);
 	void currentDiveChanged(QModelIndex index);
 protected:
-	QModelIndex oldCurrent;
+	dive *oldCurrent;
 
 	// Access trip and dive data
 	static QVariant diveData(const struct dive *d, int column, int role);
@@ -97,7 +97,7 @@ protected:
 	static QString tripTitle(const dive_trip *trip);
 	static QString tripShortDate(const dive_trip *trip);
 	void sendShownChangedSignals(const std::vector<char> &changed, quintptr parentIndex);
-	void currentChanged(const QModelIndex &current);
+	void currentChanged();
 
 	virtual dive *diveOrNull(const QModelIndex &index) const = 0;	// Returns a dive if this index represents a dive, null otherwise
 	virtual void clearData() = 0;
