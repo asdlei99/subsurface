@@ -704,7 +704,7 @@ void MobileSwipeModel::doneInsert(const QModelIndex &parent, int first, int last
 
 void MobileSwipeModel::prepareMove(const QModelIndex &parent, int first, int last, const QModelIndex &dest, int destRow)
 {
-	beginMoveRows(QModelIndex(), mapRowFromSource(parent, last), mapRowFromSource(parent, first), QModelIndex(), mapRowFromSource(dest, destRow));
+	beginMoveRows(QModelIndex(), mapRowFromSource(parent, last), mapRowFromSource(parent, first), QModelIndex(), mapRowFromSourceForInsert(dest, destRow));
 }
 
 void MobileSwipeModel::doneMove(const QModelIndex &parent, int first, int last, const QModelIndex &dest, int destRow)
@@ -716,7 +716,7 @@ void MobileSwipeModel::doneMove(const QModelIndex &parent, int first, int last, 
 		if (destRow < first || destRow > last + 1) {
 			int beginLocal = mapTopLevelFromSource(last);
 			int endLocal = mapTopLevelFromSource(first) + 1;
-			int destLocal = mapTopLevelFromSource(destRow);
+			int destLocal = mapTopLevelFromSourceForInsert(destRow);
 			int count = endLocal - beginLocal;
 			std::vector<int> items;
 			items.reserve(count);
@@ -734,7 +734,7 @@ void MobileSwipeModel::doneMove(const QModelIndex &parent, int first, int last, 
 		// From top-level to trip
 		int beginLocal = mapTopLevelFromSource(last);
 		int endLocal = mapTopLevelFromSource(first) + 1;
-		int destLocal = mapTopLevelFromSource(dest.row());
+		int destLocal = mapTopLevelFromSourceForInsert(dest.row());
 		int count = endLocal - beginLocal;
 		int numMoved = removeTopLevel(beginLocal, endLocal);
 		if (destLocal >= beginLocal)
@@ -743,7 +743,7 @@ void MobileSwipeModel::doneMove(const QModelIndex &parent, int first, int last, 
 	} else if (parent.isValid() && !dest.isValid()) {
 		// From trip to top-level
 		int fromLocal = mapTopLevelFromSource(parent.row());
-		int toLocal = mapTopLevelFromSource(dest.row());
+		int toLocal = mapTopLevelFromSourceForInsert(dest.row());
 		int numMoved = last - first + 1;
 		std::vector<int> items(numMoved, 1); // This can only be dives -> item count is 1
 		updateTopLevel(fromLocal, -numMoved);
@@ -751,7 +751,7 @@ void MobileSwipeModel::doneMove(const QModelIndex &parent, int first, int last, 
 	} else {
 		// From trip to other trip
 		int fromLocal = mapTopLevelFromSource(parent.row());
-		int toLocal = mapTopLevelFromSource(dest.row());
+		int toLocal = mapTopLevelFromSourceForInsert(dest.row());
 		int numMoved = last - first + 1;
 		if (fromLocal != toLocal) {
 			updateTopLevel(fromLocal, -numMoved);
