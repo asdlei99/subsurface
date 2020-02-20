@@ -469,6 +469,17 @@ MobileSwipeModel::MobileSwipeModel(DiveTripModelBase *source) : MobileListModelB
 	initData();
 }
 
+// Return the size of a top level item in the source model. Whereby size
+// is the number of items it represents in the swipe model:
+// A dive has size one, a trip has the size of the number of its items.
+// Attention: the given row is expressed in source-coordinates!
+int MobileSwipeModel::topLevelRowCountInSource(int sourceRow) const
+{
+	QModelIndex index = source->index(sourceRow, 0, QModelIndex());
+	return source->data(index, DiveTripModelBase::IS_TRIP_ROLE).value<bool>() ?
+		source->rowCount(index) : 1;
+}
+
 void MobileSwipeModel::initData()
 {
 	rows = 0;
@@ -478,9 +489,7 @@ void MobileSwipeModel::initData()
 	for (int i = 0; i < topLevelRows; ++i) {
 		firstElement[i] = act;
 		// Note: we populate the model in reverse order, because we show the newest dives first.
-		QModelIndex index = source->index(topLevelRows - i - 1, 0, QModelIndex());
-		act += source->data(index, DiveTripModelBase::IS_TRIP_ROLE).value<bool>() ?
-			source->rowCount(index) : 1;
+		act += topLevelRowCountInSource(topLevelRows - i - 1);
 	}
 	rows = act;
 	invalidateSourceRowCache();
@@ -670,7 +679,7 @@ void MobileSwipeModel::doneInsert(const QModelIndex &parent, int first, int last
 		items.reserve(last - first + 1);
 		int count = 0;
 		for (int row = last; row >= first; --row) {
-			items.push_back(source->rowCount(source->index(row, 0)));
+			items.push_back(topLevelRowCountInSource(row));
 			count += items.back();
 		}
 
