@@ -113,6 +113,7 @@ public:
 	Q_INVOKABLE void setGitLocalOnly(const bool &value);
 	Q_INVOKABLE void setFilter(const QString filterText);
 	Q_INVOKABLE void toggle(int row);
+	Q_INVOKABLE void expand(int row);
 	Q_INVOKABLE void selectRow(int row);
 	Q_INVOKABLE void selectSwipeRow(int row);
 

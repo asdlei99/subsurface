@@ -12,6 +12,7 @@ public:
 	bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
 
 	void toggle(int row);
+	void expand(int row);
 	Q_INVOKABLE QVariantMap get(int row) const;
 	Q_INVOKABLE int shown(); // number dives that are accepted by the filter
 private:
