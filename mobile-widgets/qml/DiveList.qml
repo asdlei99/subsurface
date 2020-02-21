@@ -74,6 +74,18 @@ Kirigami.ScrollablePage {
 					}
 				}
 			}
+			// use this to select a dive without switching to dive details; instead open context drawer
+			onPressAndHold: {
+				view.currentIndex = index
+				if (isTrip) {
+					manager.appendTextToLog("press and hold on trip is same as click")
+					manager.toggle(model.row)
+				} else {
+					manager.appendTextToLog("press and hold on dive; open context drawer")
+					manager.selectRow(model.row)
+					contextDrawer.open()
+				}
+			}
 
 			// first we look at the trip
 			Item {
@@ -151,7 +163,7 @@ Kirigami.ScrollablePage {
 						left: parent.left
 						right: parent.right
 					}
-					color: selected ? subsurfaceTheme.lightPrimaryColor : subsurfaceTheme.backgroundColor
+					color: selected ? subsurfaceTheme.darkerPrimaryColor : subsurfaceTheme.backgroundColor
 					visible: !isTrip
 					Item {
 						anchors.fill: parent
@@ -159,7 +171,7 @@ Kirigami.ScrollablePage {
 							id: leftBarDive
 							width: Kirigami.Units.smallSpacing
 							height: isTopLevel ? 0 : diveListEntry.height * 0.8
-							color: selected ? subsurfaceTheme.backgroundColor :subsurfaceTheme.lightPrimaryColor // reverse of the diveBackground
+							color: selected ? subsurfaceTheme.backgroundColor :subsurfaceTheme.darkerPrimaryColor // reverse of the diveBackground
 							anchors {
 								left: parent.left
 								top: parent.top
@@ -183,7 +195,7 @@ Kirigami.ScrollablePage {
 								font.pointSize: subsurfaceTheme.smallPointSize
 								elide: Text.ElideRight
 								maximumLineCount: 1 // needed for elide to work at all
-								color: subsurfaceTheme.textColor
+								color: selected ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.textColor
 								anchors {
 									left: parent.left
 									leftMargin: horizontalPadding * 2
@@ -204,7 +216,7 @@ Kirigami.ScrollablePage {
 									text: (undefined !== dateTime) ? dateTime : ""
 									width: Math.max(locationText.width * 0.45, paintedWidth) // helps vertical alignment throughout listview
 									font.pointSize: subsurfaceTheme.smallPointSize
-									color: subsurfaceTheme.secondaryTextColor
+									color: selected ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
 								}
 								// spacer, just in case
 								Controls.Label {
@@ -216,14 +228,14 @@ Kirigami.ScrollablePage {
 									text: (undefined !== depthDuration) ? depthDuration : ""
 									width: Math.max(Kirigami.Units.gridUnit * 3, paintedWidth) // helps vertical alignment throughout listview
 									font.pointSize: subsurfaceTheme.smallPointSize
-									color: subsurfaceTheme.secondaryTextColor
+									color: selected ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
 								}
 							}
 							Controls.Label {
 								id: numberText
 								text: "#" + number
 								font.pointSize: subsurfaceTheme.smallPointSize
-								color: subsurfaceTheme.secondaryTextColor
+								color: selected ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
 								anchors {
 									right: parent.right
 									rightMargin: Kirigami.Units.smallSpacing
@@ -261,6 +273,20 @@ Kirigami.ScrollablePage {
 			manager.addDiveToTrip(currentItem.myData.id, currentItem.myData.tripBelow)
 		}
 	}
+	property QtObject deleteAction: Kirigami.Action {
+		text: qsTr("Delete dive")
+		icon { name: ":/icons/trash-empty.svg" }
+		onTriggered: manager.deleteDive(currentItem.myData.id)
+	}
+	property QtObject mapAction: Kirigami.Action {
+		text: qsTr("Show on map")
+		icon { name: ":/icons/gps" }
+		visible: currentItem && currentItem.myData && currentItem.myData.gps !== ""
+		onTriggered: {
+			showMap()
+			mapPage.centerOnDiveSite(currentItem.myData.diveSite)
+		}
+	}
 	property QtObject undoAction: Kirigami.Action {
 		text: qsTr("Undo") + " " + manager.undoText
 		enabled: manager.undoText !== ""
@@ -271,7 +297,7 @@ Kirigami.ScrollablePage {
 		enabled: manager.redoText !== ""
 		onTriggered: manager.redo()
 	}
-	property variant contextactions: [ removeDiveFromTripAction, addDiveToTripAboveAction, addDiveToTripBelowAction, undoAction, redoAction ]
+	property variant contextactions: [ removeDiveFromTripAction, addDiveToTripAboveAction, addDiveToTripBelowAction, deleteAction, mapAction, undoAction, redoAction ]
 	StartPage {
 		id: startPage
 		anchors.fill: parent
