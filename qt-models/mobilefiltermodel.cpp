@@ -35,6 +35,17 @@ void MobileFilterModel::toggle(int row)
 	MobileModels::instance()->listModel()->toggle(mapRowToSource(row));
 }
 
+QVariantMap MobileFilterModel::get(int row) const
+{
+	QHashIterator <int, QByteArray> it(roleNames());
+	QVariantMap res;
+	while (it.hasNext()) {
+		it.next();
+		res[it.value()] = index(row,0 ).data(it.key());
+	}
+	return res;
+}
+
 bool MobileFilterModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
 	QAbstractItemModel *m = sourceModel();
