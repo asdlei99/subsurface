@@ -281,10 +281,20 @@ void MobileListModel::doneInsert(const QModelIndex &parent, int first, int last)
 		if (!parent.isValid() && expandedRow >= 0 && range.first <= expandedRow)
 			expandedRow += last - first + 1;
 		endInsertRows();
+	} else {
+		// The range was not visible, thus we inserted into a non-exapnded trip.
+		// However, we might have inserted the current item. This means that we
+		// have to expand that trip.
+		// If we inserted a dive that is the current item
+		QModelIndex index = source->index(parent.row(), 0, QModelIndex());
+		if (source->data(index, DiveTripModelBase::TRIP_HAS_CURRENT_ROLE).value<bool>()) {
+			int row = mapRowFromSourceTopLevel(parent.row());
+			expand(row);
+		}
 	}
 
-	// If we inserted a trip that contains the current item, expand that trip
 	if (!parent.isValid()) {
+		// If we inserted a trip that contains the current item, expand that trip
 		for (int i = first; i <= last; ++i) {
 			// Accessing data via the model/view API is annoying.
 			// Perhaps we should simply add a tripHasCurrent(int row) function?
