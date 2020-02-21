@@ -151,7 +151,7 @@ Kirigami.ScrollablePage {
 						left: parent.left
 						right: parent.right
 					}
-					color: selected ? subsurfaceTheme.lightPrimaryColor : subsurfaceTheme.backgroundColor
+					color: selected ? subsurfaceTheme.darkerPrimaryColor : subsurfaceTheme.backgroundColor
 					visible: !isTrip
 					Item {
 						anchors.fill: parent
@@ -159,7 +159,7 @@ Kirigami.ScrollablePage {
 							id: leftBarDive
 							width: Kirigami.Units.smallSpacing
 							height: isTopLevel ? 0 : diveListEntry.height * 0.8
-							color: selected ? subsurfaceTheme.backgroundColor :subsurfaceTheme.lightPrimaryColor // reverse of the diveBackground
+							color: selected ? subsurfaceTheme.backgroundColor :subsurfaceTheme.darkerPrimaryColor // reverse of the diveBackground
 							anchors {
 								left: parent.left
 								top: parent.top
@@ -183,7 +183,7 @@ Kirigami.ScrollablePage {
 								font.pointSize: subsurfaceTheme.smallPointSize
 								elide: Text.ElideRight
 								maximumLineCount: 1 // needed for elide to work at all
-								color: subsurfaceTheme.textColor
+								color: selected ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.textColor
 								anchors {
 									left: parent.left
 									leftMargin: horizontalPadding * 2
@@ -204,7 +204,7 @@ Kirigami.ScrollablePage {
 									text: (undefined !== dateTime) ? dateTime : ""
 									width: Math.max(locationText.width * 0.45, paintedWidth) // helps vertical alignment throughout listview
 									font.pointSize: subsurfaceTheme.smallPointSize
-									color: subsurfaceTheme.secondaryTextColor
+									color: selected ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
 								}
 								// spacer, just in case
 								Controls.Label {
@@ -216,14 +216,14 @@ Kirigami.ScrollablePage {
 									text: (undefined !== depthDuration) ? depthDuration : ""
 									width: Math.max(Kirigami.Units.gridUnit * 3, paintedWidth) // helps vertical alignment throughout listview
 									font.pointSize: subsurfaceTheme.smallPointSize
-									color: subsurfaceTheme.secondaryTextColor
+									color: selected ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
 								}
 							}
 							Controls.Label {
 								id: numberText
 								text: "#" + number
 								font.pointSize: subsurfaceTheme.smallPointSize
-								color: subsurfaceTheme.secondaryTextColor
+								color: selected ? subsurfaceTheme.darkerPrimaryTextColor : subsurfaceTheme.secondaryTextColor
 								anchors {
 									right: parent.right
 									rightMargin: Kirigami.Units.smallSpacing
