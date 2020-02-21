@@ -239,6 +239,24 @@ static T pop(std::vector<T> &v)
 void MobileListModel::prepareRemove(const QModelIndex &parent, int first, int last)
 {
 	IndexRange range = mapRangeFromSource(parent, first, last);
+
+	// Check whether we remove a dive from an expanded trip
+	if (range.visible && parent.isValid()) {
+		for (int i = first; i <= last; ++i) {
+			QModelIndex index = source->index(i, 0, parent);
+			if (source->data(index, DiveTripModelBase::CURRENT_ROLE).value<bool>()) {
+				// Hack alert: we remove the currently selected dive from a visible trip.
+				// Therefore, simply collapse the expanded trip. This is done in prepareRemove(),
+				// i.e. before the base model has actually done any removal and thus things should
+				// be consistent. Then, we can simply pretend that the range was invisible all along,
+				// i.e. the removal is a no-op.
+				unexpand();
+				range.visible = false;
+				break;
+			}
+		}
+	}
+
 	rangeStack.push_back(range);
 	if (range.visible)
 		beginRemoveRows(QModelIndex(), range.first, range.last);
