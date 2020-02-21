@@ -123,6 +123,14 @@ int MobileListModel::mapRowFromSourceTopLevel(int row) const
 	return expandedRow >= 0 && row > expandedRow ? row + numSubItems() : row;
 }
 
+int MobileListModel::mapRowFromSourceTopLevelForInsert(int row) const
+{
+	// This is a top-level item. If it is after the expanded row,
+	// we have to add the items of the expanded row.
+	row = invertRow(QModelIndex(), row) + 1;
+	return expandedRow >= 0 && row > expandedRow ? row + numSubItems() : row;
+}
+
 // The parentRow parameter is the row of the expanded trip converted into
 // local "coordinates" as a premature optimization.
 int MobileListModel::mapRowFromSourceTrip(const QModelIndex &parent, int parentRow, int row) const
@@ -178,8 +186,8 @@ MobileListModel::IndexRange MobileListModel::mapRangeFromSourceForInsert(const Q
 {
 	int num = last - first;
 	if (!parent.isValid()) {
-		first = mapRowFromSourceTopLevel(first);
-		return { true, first + 1, first + 1 + num };
+		first = mapRowFromSourceTopLevelForInsert(first);
+		return { true, first, first + num };
 	} else {
 		int parentRow = invertRow(QModelIndex(), parent.row());
 		if (parentRow == expandedRow) {
@@ -300,7 +308,7 @@ void MobileListModel::doneInsert(const QModelIndex &parent, int first, int last)
 			expandedRow += last - first + 1;
 		endInsertRows();
 	} else {
-		// The range was not visible, thus we inserted into a non-exapnded trip.
+		// The range was not visible, thus we inserted into a non-expanded trip.
 		// However, we might have inserted the current item. This means that we
 		// have to expand that trip.
 		// If we inserted a dive that is the current item

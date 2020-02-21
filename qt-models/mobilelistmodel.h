@@ -85,6 +85,7 @@ private:
 	QModelIndex sourceIndex(int row, int col, int parentRow = -1) const;
 	int numSubItems() const;
 	int mapRowFromSourceTopLevel(int row) const;
+	int mapRowFromSourceTopLevelForInsert(int row) const;
 	int mapRowFromSourceTrip(const QModelIndex &parent, int parentRow, int row) const;
 	int mapRowFromSource(const QModelIndex &parent, int row) const;
 	int invertRow(const QModelIndex &parent, int row) const;
