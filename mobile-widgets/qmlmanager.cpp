@@ -1627,6 +1627,8 @@ void QMLManager::applyGpsData()
 	std::vector<DiveAndLocation> fixes = locationProvider->getLocations();
 	Command::applyGPSFixes(fixes);
 	appendTextToLog(QString("Attached %1 GPS fixes").arg(fixes.size()));
+	if (fixes.size())
+		changesNeedSaving();
 }
 
 void QMLManager::populateGpsData()
