@@ -9,6 +9,7 @@ import QtQuick.Window 2.2
 import org.subsurfacedivelog.mobile 1.0
 import org.kde.kirigami 2.4 as Kirigami
 import QtGraphicalEffects 1.0
+import QtQuick.Templates 2.0 as QtQuickTemplates
 
 Kirigami.ApplicationWindow {
 	id: rootItem
@@ -141,7 +142,9 @@ Kirigami.ApplicationWindow {
 	}
 
 	contextDrawer: Kirigami.ContextDrawer {
-		id: cDrawer
+		id: contextDrawer
+		closePolicy: QtQuickTemplates.Popup.CloseOnPressOutside
+
 	}
 
 	globalDrawer: Kirigami.GlobalDrawer {
