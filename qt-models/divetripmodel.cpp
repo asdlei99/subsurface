@@ -1077,16 +1077,21 @@ int DiveTripModelTree::tripInDirection(const struct dive *d, int direction) cons
 {
 	qDebug() << "called tripInDirection for dive #" << d->number << "direction" << direction;
 	for (int i = 0; i < (int)items.size(); ++i) {
-		if (items[i].d_or_t.dive == d) {
+		if (items[i].d_or_t.dive == d || (items[i].d_or_t.trip && findDiveInTrip(i, d) != -1)) {
 			// now walk in the direction given to find a trip
 			int offset = direction;
 			while (i + offset >= 0 && i + offset < (int)items.size()) {
-				if (items[i + offset].d_or_t.trip)
+				if (items[i + offset].d_or_t.trip && (!d->divetrip || items[i + offset].d_or_t.trip->id != d->divetrip->id)) {
+					// we found a trip (and if the dive is already in a trip, we make sure this is a different trip)
+					qDebug() << "... and found trip" << items[i + offset].d_or_t.trip->id;
 					return items[i + offset].d_or_t.trip->id;
+				}
 				offset += direction;
 			}
+			break;
 		}
 	}
+	qDebug() << "... and found no trip";
 	return -1;
 }
 #endif
