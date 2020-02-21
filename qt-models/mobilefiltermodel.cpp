@@ -35,11 +35,6 @@ void MobileFilterModel::toggle(int row)
 	MobileModels::instance()->listModel()->toggle(mapRowToSource(row));
 }
 
-void MobileFilterModel::expand(int row)
-{
-	MobileModels::instance()->listModel()->expand(mapRowToSource(row));
-}
-
 QVariantMap MobileFilterModel::get(int row) const
 {
 	QHashIterator <int, QByteArray> it(roleNames());

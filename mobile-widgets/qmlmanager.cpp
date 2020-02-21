@@ -381,11 +381,6 @@ void QMLManager::toggle(int row)
 	MobileFilterModel::instance()->toggle(row);
 }
 
-void QMLManager::expand(int row)
-{
-	MobileFilterModel::instance()->expand(row);
-}
-
 void QMLManager::selectRow(int row)
 {
 	dive *d = diveInRow(MobileFilterModel::instance(), row);
