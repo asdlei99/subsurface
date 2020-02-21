@@ -247,47 +247,18 @@ Kirigami.ScrollablePage {
 			manager.removeDiveFromTrip(currentItem.myData.id)
 		}
 	}
-	function expandAndSelect(idx, diveId, direction) {
-		var modelItem
-		manager.addDiveToTrip(currentItem.myData.id, currentItem.myData.tripBelow)
-		// since the item is now in a trip, expand that trip and set the correct currentIndex
-		// we only know that we moved the dive into the previous or next trip, we don't know
-		// where in the trip it will be, so let's simply search for it
-		if (direction === -1)
-			// if searching up, we need to start at the element above the current idx
-			// since that will possibly now point to the trip after this dive
-			idx--;
-		while (modelItem = diveListView.model.get(idx)) {
-			if (modelItem.tripId !== undefined) {
-				manager.expand(idx) // expand the first trip we find trip
-				direction = 1 // now that the trip is expanded, always search down
-			} else {
-				if (modelItem.id === diveId) {
-					diveListView.currentIndex = idx;
-					break
-				}
-			}
-			idx += direction
-		}
-	}
 	property QtObject addDiveToTripAboveAction: Kirigami.Action {
 		text: visible ? qsTr ("Add dive %1 to trip above").arg(currentItem.myData.number) : ""
 		visible: currentItem && currentItem.myData && !currentItem.myData.diveInTrip && currentItem.myData.tripAbove !== -1
 		onTriggered: {
-			var idx = diveListView.currentIndex
-			var diveId = currentItem.myData.id
 			manager.addDiveToTrip(currentItem.myData.id, currentItem.myData.tripAbove)
-			expandAndSelect(idx, diveId, -1)
 		}
 	}
 	property QtObject addDiveToTripBelowAction: Kirigami.Action {
 		text: visible ? qsTr ("Add dive %1 to trip below").arg(currentItem.myData.number) : ""
 		visible: currentItem && currentItem.myData && !currentItem.myData.diveInTrip && currentItem.myData.tripBelow !== -1
 		onTriggered: {
-			var idx = diveListView.currentIndex
-			var diveId = currentItem.myData.id
 			manager.addDiveToTrip(currentItem.myData.id, currentItem.myData.tripBelow)
-			expandAndSelect(idx, diveId, +1)
 		}
 	}
 	property QtObject undoAction: Kirigami.Action {
