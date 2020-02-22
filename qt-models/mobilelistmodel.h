@@ -58,6 +58,8 @@ public:
 		DiveInTripRole,
 		TripAbove,
 		TripBelow,
+		TripLocationRole,
+		TripNotesRole,
 	};
 	QHash<int, QByteArray> roleNames() const override;
 protected:
