@@ -287,6 +287,7 @@ Kirigami.ScrollablePage {
 		text: qsTr("Edit trip details")
 		visible: currentItem && currentItem.myData && currentItem.myData.isTrip
 		onTriggered: {
+			tripEditWindow.tripId = currentItem.myData.tripId
 			tripEditWindow.tripLocation = currentItem.myData.tripLocation
 			tripEditWindow.tripNotes = currentItem.myData.tripNotes
 			pageStack.push(tripEditWindow)
