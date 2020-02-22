@@ -118,6 +118,10 @@ public:
 	static MobileSwipeModel *instance();
 	void resetModel(DiveTripModelBase::Layout layout);	// Switch between tree and list view
 private:
+	struct IndexRange {
+		int first, last;
+	};
+	std::vector<IndexRange> rangeStack;
 	std::vector<int> firstElement; // First element of top level item.
 	int rows;
 	QVariant data(const QModelIndex &index, int role) const override;
@@ -138,6 +142,7 @@ private:
 	int mapRowFromSource(const QModelIndex &parent, int row) const;
 	int mapRowFromSource(const QModelIndex &parent) const;
 	int mapRowFromSourceForInsert(const QModelIndex &parent, int row) const;
+	IndexRange mapRangeFromSource(const QModelIndex &parent, int first, int last) const;
 	void invalidateSourceRowCache() const;
 	void updateSourceRowCache(int row) const;
 
