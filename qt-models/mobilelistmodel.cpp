@@ -810,6 +810,7 @@ void MobileSwipeModel::doneMove(const QModelIndex &parent, int first, int last, 
 			updateTopLevel(toLocal, numMoved);
 		}
 	}
+	endMoveRows();
 	invalidateSourceRowCache();
 }
 
