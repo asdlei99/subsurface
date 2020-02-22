@@ -383,6 +383,7 @@ void MobileListModel::doneMove(const QModelIndex &parent, int first, int last, c
 	if (!range.visible && rangeDest.visible)
 		return doneInsert(parent, first, last);
 	updateRowAfterMove(range, rangeDest, expandedRow);
+	endMoveRows();
 }
 
 void MobileListModel::expand(int row)
